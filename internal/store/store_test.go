@@ -113,3 +113,19 @@ func TestSettleOrderCompleted(t *testing.T) {
 		t.Fatalf("balance=%d want 800000", u.Balance)
 	}
 }
+
+func TestConfigKV(t *testing.T) {
+	ctx := context.Background()
+	s, _ := OpenInMemory()
+	defer s.Close()
+	s.Migrate()
+	if _, err := s.GetConfig(ctx, "x"); err != ErrConfigMissing {
+		t.Fatalf("want ErrConfigMissing, got %v", err)
+	}
+	s.SetConfig(ctx, "x", "1")
+	s.SetConfig(ctx, "x", "2")
+	v, _ := s.GetConfig(ctx, "x")
+	if v != "2" {
+		t.Fatalf("want 2, got %s", v)
+	}
+}
