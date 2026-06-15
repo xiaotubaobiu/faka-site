@@ -92,3 +92,34 @@ func (s *Server) postConfigTest(w http.ResponseWriter, r *http.Request) {
 	}
 	s.render(w, r, "admin_config.html", ViewData{Title: "配置", Data: d})
 }
+
+func (s *Server) postUserStatus(w http.ResponseWriter, r *http.Request) {
+	id, _ := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	status, _ := strconv.Atoi(r.PostFormValue("status"))
+	s.store.SetUserStatus(id, status)
+	http.Redirect(w, r, "/admin/users", http.StatusSeeOther)
+}
+
+func (s *Server) postUserReset(w http.ResponseWriter, r *http.Request) {
+	id, _ := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	u, err := s.store.UserByID(id)
+	if err != nil {
+		http.Redirect(w, r, "/admin/users", http.StatusSeeOther)
+		return
+	}
+	pw := randPassword()
+	hash, _ := auth.HashPassword(pw)
+	s.store.SetUserPassword(id, hash)
+	var mailErr string
+	if m := s.mailer(); m != nil {
+		if err := m.Send(u.Email, "发卡站密码已重置", "邮箱:"+u.Email+"\n新密码:"+pw); err != nil {
+			mailErr = err.Error()
+		}
+	} else {
+		mailErr = "SMTP 未配置"
+	}
+	users, _ := s.store.ListUsers()
+	s.render(w, r, "admin_users.html", ViewData{Title: "用户管理", Data: map[string]any{
+		"users": users, "resetEmail": u.Email, "resetPassword": pw, "mailErr": mailErr,
+	}})
+}
