@@ -1,0 +1,6 @@
+*.db
+*.db-*
+/data
+/faka-site
+*.sqlite
+*.sqlite-*
