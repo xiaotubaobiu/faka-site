@@ -7,7 +7,7 @@
   <a href="/">发卡站</a>
   {{if .User}}<span class="bal">余额:{{.User.BalanceFmt}}</span>
     <a href="/buy">买码</a><a href="/orders">订单</a>
-    {{if eq .User.Role "admin"}}<a href="/admin/users">管理</a>{{end}}
+    {{if eq .User.Role "admin"}}<a href="/admin/users">用户管理</a><a href="/admin/create">建账户</a><a href="/admin/config">配置</a>{{end}}
     <a href="/logout">退出({{.User.Email}})</a>
   {{else}}<a href="/login">登录</a>{{end}}
 </nav>
