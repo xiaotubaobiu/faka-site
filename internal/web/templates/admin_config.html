@@ -14,4 +14,6 @@
   <label>密码 <input name="smtp_pass" type="password" placeholder="留空=不修改"></label>
   <label>发件人 <input name="smtp_from" value="{{.Data.cfg.SMTPFrom}}"></label><br>
   <button>保存</button>
-</form>{{end}}
+</form>
+<form method="post" action="/admin/config/test" style="margin-top:1rem"><input name="csrf" type="hidden" value="{{.CSRF}}">
+  <button>测试 NewAPI 连接</button></form>{{end}}

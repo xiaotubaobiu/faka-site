@@ -81,3 +81,14 @@ func (s *Server) postConfig(w http.ResponseWriter, r *http.Request) {
 	set("smtp_from", r.PostFormValue("smtp_from"))
 	s.render(w, r, "admin_config.html", ViewData{Title: "配置", Data: map[string]any{"cfg": s.mustConfig(), "msg": "已保存"}})
 }
+
+func (s *Server) postConfigTest(w http.ResponseWriter, r *http.Request) {
+	err := s.newapiClient().TestConnection(r.Context())
+	d := map[string]any{"cfg": s.mustConfig()}
+	if err != nil {
+		d["testErr"] = err.Error()
+	} else {
+		d["testOK"] = true
+	}
+	s.render(w, r, "admin_config.html", ViewData{Title: "配置", Data: d})
+}
