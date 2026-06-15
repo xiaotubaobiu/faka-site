@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"faka-site/internal/newapi"
 	"faka-site/internal/store"
@@ -24,10 +25,13 @@ type BuyService struct {
 
 // Buy 扣费→发码→结算。count≥1, quotaPerCode>0。
 func (b *BuyService) Buy(ctx context.Context, userID int64, count int, quotaPerCode int64) (*BuyResult, error) {
-	if count < 1 || quotaPerCode <= 0 {
+	if count < 1 || count > 10000 || quotaPerCode <= 0 || quotaPerCode > 1_000_000_000 {
 		return nil, fmt.Errorf("invalid count or quota")
 	}
 	total := int64(count) * quotaPerCode
+	if total/quotaPerCode != int64(count) {
+		return nil, fmt.Errorf("order too large")
+	}
 
 	orderID, err := b.Store.HoldForOrder(ctx, userID, count, quotaPerCode, total)
 	if err != nil {
@@ -42,7 +46,9 @@ func (b *BuyService) Buy(ctx context.Context, userID int64, count int, quotaPerC
 	case genErr != nil && len(codes) == 0:
 		res.Status = "failed"
 		res.Failed = count
-		_ = b.Store.SettleOrder(ctx, store.Order{ID: orderID, UserID: userID, QuotaPerCode: quotaPerCode, Status: "failed", FailedCount: count, RefundedAmount: total}, nil)
+		if err := b.Store.SettleOrder(ctx, store.Order{ID: orderID, UserID: userID, QuotaPerCode: quotaPerCode, Status: "failed", FailedCount: count, RefundedAmount: total}, nil); err != nil {
+			log.Printf("settle failed: orderID=%d status=%s refund=%d: %v", orderID, res.Status, res.Refunded, err)
+		}
 		res.Refunded = total
 		return res, genErr
 	case genErr != nil:
@@ -51,11 +57,15 @@ func (b *BuyService) Buy(ctx context.Context, userID int64, count int, quotaPerC
 		res.Status = "partial"
 		res.Failed = failed
 		res.Refunded = refund
-		_ = b.Store.SettleOrder(ctx, store.Order{ID: orderID, UserID: userID, QuotaPerCode: quotaPerCode, Status: "partial", SucceededCount: len(codes), FailedCount: failed, RefundedAmount: refund}, codes)
+		if err := b.Store.SettleOrder(ctx, store.Order{ID: orderID, UserID: userID, QuotaPerCode: quotaPerCode, Status: "partial", SucceededCount: len(codes), FailedCount: failed, RefundedAmount: refund}, codes); err != nil {
+			log.Printf("settle failed: orderID=%d status=%s refund=%d: %v", orderID, res.Status, res.Refunded, err)
+		}
 		return res, genErr
 	default:
 		res.Status = "completed"
-		_ = b.Store.SettleOrder(ctx, store.Order{ID: orderID, UserID: userID, QuotaPerCode: quotaPerCode, Status: "completed", SucceededCount: count}, codes)
+		if err := b.Store.SettleOrder(ctx, store.Order{ID: orderID, UserID: userID, QuotaPerCode: quotaPerCode, Status: "completed", SucceededCount: count}, codes); err != nil {
+			log.Printf("settle failed: orderID=%d status=%s refund=%d: %v", orderID, res.Status, res.Refunded, err)
+		}
 		return res, nil
 	}
 }

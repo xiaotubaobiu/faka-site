@@ -71,3 +71,27 @@ func TestBuyFailed(t *testing.T) {
 		t.Fatalf("balance=%d want 10000000 (full refund)", u.Balance)
 	}
 }
+
+func TestBuyRejectsBadInput(t *testing.T) {
+	s, uid := setup(t)
+	defer s.Close()
+	bs := &BuyService{Store: s, Issuer: fakeIssuer{}}
+	cases := []struct {
+		count int
+		quota int64
+	}{
+		{0, 100},      // count < 1
+		{10001, 100},  // count > 10000
+		{1, 0},        // quota <= 0
+		{1, 1_000_000_001}, // quota > 1e9
+	}
+	for _, c := range cases {
+		if _, err := bs.Buy(context.Background(), uid, c.count, c.quota); err == nil {
+			t.Fatalf("expected rejection for count=%d quota=%d", c.count, c.quota)
+		}
+	}
+	u, _ := s.UserByID(uid)
+	if u.Balance != 10_000_000 {
+		t.Fatalf("balance changed on rejected input: %d", u.Balance)
+	}
+}
