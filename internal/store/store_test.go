@@ -1,6 +1,9 @@
 package store
 
-import "testing"
+import (
+	"context"
+	"testing"
+)
 
 func TestOpenAndMigrate(t *testing.T) {
 	s, err := OpenInMemory()
@@ -44,5 +47,69 @@ func TestUsersCRUD(t *testing.T) {
 	u, _ = s.UserByID(id)
 	if u.Status != 0 {
 		t.Fatal("status not updated")
+	}
+}
+
+func TestHoldInsufficientAndRefund(t *testing.T) {
+	ctx := context.Background()
+	s, _ := OpenInMemory()
+	defer s.Close()
+	s.Migrate()
+	uid, _ := s.CreateUser("u@x.com", "h", "user")
+	_ = s.AddBalance(ctx, uid, 1, 1_000_000)
+
+	if _, err := s.HoldForOrder(ctx, uid, 1, 2_000_000, 2_000_000); err != ErrInsufficient {
+		t.Fatalf("want ErrInsufficient, got %v", err)
+	}
+
+	oid, err := s.HoldForOrder(ctx, uid, 1, 500_000, 500_000)
+	if err != nil {
+		t.Fatal(err)
+	}
+	u, _ := s.UserByID(uid)
+	if u.Balance != 500_000 {
+		t.Fatalf("balance after hold = %d, want 500000", u.Balance)
+	}
+
+	if err := s.Refund(ctx, uid, oid, 200_000); err != nil {
+		t.Fatal(err)
+	}
+	u, _ = s.UserByID(uid)
+	if u.Balance != 700_000 {
+		t.Fatalf("balance after refund = %d, want 700000", u.Balance)
+	}
+
+	var n int
+	s.db.QueryRow("SELECT count(*) FROM balance_ledger WHERE user_id=?", uid).Scan(&n)
+	if n != 3 {
+		t.Fatalf("ledger rows = %d, want 3", n)
+	}
+}
+
+func TestSettleOrderCompleted(t *testing.T) {
+	ctx := context.Background()
+	s, _ := OpenInMemory()
+	defer s.Close()
+	s.Migrate()
+	uid, _ := s.CreateUser("u2@x.com", "h", "user")
+	s.AddBalance(ctx, uid, 1, 1_000_000)
+	oid, _ := s.HoldForOrder(ctx, uid, 2, 100_000, 200_000)
+
+	codes := []string{"CODE111", "CODE222"}
+	o := Order{ID: oid, UserID: uid, QuotaPerCode: 100_000, Status: "completed", SucceededCount: 2}
+	if err := s.SettleOrder(ctx, o, codes); err != nil {
+		t.Fatal(err)
+	}
+	got, _ := s.OrderCodes(ctx, oid)
+	if len(got) != 2 {
+		t.Fatalf("want 2 codes, got %d", len(got))
+	}
+	ord, _ := s.Order(ctx, oid)
+	if ord.Status != "completed" || ord.SucceededCount != 2 {
+		t.Fatalf("order not settled: %+v", ord)
+	}
+	u, _ := s.UserByID(uid)
+	if u.Balance != 800_000 {
+		t.Fatalf("balance=%d want 800000", u.Balance)
 	}
 }
