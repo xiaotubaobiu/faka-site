@@ -1,0 +1,15 @@
+{{define "content"}}
+<h2>购买兑换码</h2>
+{{if .Data.error}}<p class="err">{{.Data.error}}</p>{{end}}
+{{if .Data.result}}
+  <p>订单 #{{.Data.result.OrderID}}:{{.Data.result.Status}},生成 {{.Data.result.Succeeded}} 个{{if gt .Data.result.Failed 0}},失败 {{.Data.result.Failed}} 个已退款{{end}}</p>
+  <textarea readonly rows="6">{{range .Data.result.Codes}}{{.}}
+{{end}}</textarea>
+{{end}}
+<form method="post" action="/buy">
+  <input name="csrf" type="hidden" value="{{.CSRF}}">
+  <label>数量 <input name="count" type="number" min="1" value="1"></label>
+  <label>每码额度 <input name="quota" type="number" min="1" value="500000"></label>
+  <p>合计扣除 = 数量 × 每码额度</p>
+  <button>购买</button>
+</form>{{end}}

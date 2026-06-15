@@ -1,0 +1,7 @@
+{{define "content"}}
+<h2>用户管理</h2>
+<a href="/admin/create"><button>一键建账户</button></a>
+<table><tr><th>ID</th><th>邮箱</th><th>角色</th><th>余额</th><th>状态</th><th>操作</th></tr>
+{{range .Data.users}}<tr><td>{{.ID}}</td><td>{{.Email}}</td><td>{{.Role}}</td><td>{{.Balance}}</td><td>{{if eq .Status 1}}启用{{else}}禁用{{end}}</td>
+<td><a href="/admin/balance?id={{.ID}}">加余额</a></td></tr>{{end}}
+</table>{{end}}

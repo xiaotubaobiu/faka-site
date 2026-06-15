@@ -1,0 +1,5 @@
+{{define "content"}}
+<h2>我的订单</h2>
+<table><tr><th>订单</th><th>数量</th><th>每码额度</th><th>状态</th></tr>
+{{range .Data.orders}}<tr><td><a href="/orders/{{.ID}}">#{{.ID}}</a></td><td>{{.CodeCount}}</td><td>{{.QuotaPerCode}}</td><td>{{.Status}}</td></tr>
+{{end}}</table>{{end}}

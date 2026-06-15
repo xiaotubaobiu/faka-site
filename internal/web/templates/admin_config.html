@@ -1,0 +1,17 @@
+{{define "content"}}
+<h2>站点配置</h2>
+{{if .Data.msg}}<p>{{.Data.msg}}</p>{{end}}
+{{if .Data.testErr}}<p class="err">{{.Data.testErr}}</p>{{end}}
+{{if .Data.testOK}}<p>连接正常,且为管理员 ✓</p>{{end}}
+<form method="post" action="/admin/config"><input name="csrf" type="hidden" value="{{.CSRF}}">
+  <label>NewAPI 网址 <input name="newapi_base_url" value="{{.Data.cfg.BaseURL}}"></label><br>
+  <label>系统访问令牌 <input name="newapi_access_token" placeholder="留空=不修改"></label><br>
+  <label>管理员用户ID <input name="newapi_admin_user_id" value="{{.Data.cfg.AdminUserID}}"></label><br>
+  <hr>
+  <label>SMTP 主机 <input name="smtp_host" value="{{.Data.cfg.SMTPHost}}"></label>
+  <label>端口 <input name="smtp_port" value="{{.Data.cfg.SMTPPort}}"></label><br>
+  <label>用户 <input name="smtp_user" value="{{.Data.cfg.SMTPUser}}"></label>
+  <label>密码 <input name="smtp_pass" type="password" placeholder="留空=不修改"></label>
+  <label>发件人 <input name="smtp_from" value="{{.Data.cfg.SMTPFrom}}"></label><br>
+  <button>保存</button>
+</form>{{end}}

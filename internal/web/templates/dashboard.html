@@ -1,0 +1,5 @@
+{{define "content"}}
+<h2>欢迎,{{.User.Email}}</h2>
+<p>当前余额:<b>{{.User.BalanceFmt}}</b></p>
+<a href="/buy"><button>购买兑换码</button></a>
+<a href="/orders"><button>我的订单</button></a>{{end}}

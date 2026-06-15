@@ -1,0 +1,5 @@
+{{define "content"}}
+<h2>一键建账户</h2>
+{{if .Data.newPassword}}<p>已创建 <b>{{.Data.newEmail}}</b>,初始密码:<code>{{.Data.newPassword}}</code>{{if .Data.mailErr}}<br><span class="err">邮件发送失败:{{.Data.mailErr}}(请手动转交)</span>{{end}}</p>{{end}}
+<form method="post" action="/admin/create"><input name="csrf" type="hidden" value="{{.CSRF}}">
+  <input name="email" placeholder="用户邮箱" required><button>生成</button></form>{{end}}

@@ -1,0 +1,15 @@
+{{define "layout"}}<!doctype html>
+<html lang="zh"><head><meta charset="utf-8">
+<title>{{.Title}}</title>
+<link rel="stylesheet" href="/static/style.css"></head>
+<body>
+<nav class="nav">
+  <a href="/">发卡站</a>
+  {{if .User}}<span class="bal">余额:{{.User.BalanceFmt}}</span>
+    <a href="/buy">买码</a><a href="/orders">订单</a>
+    {{if eq .User.Role "admin"}}<a href="/admin/users">管理</a>{{end}}
+    <a href="/logout">退出({{.User.Email}})</a>
+  {{else}}<a href="/login">登录</a>{{end}}
+</nav>
+<main>{{template "content" .}}</main>
+</body></html>{{end}}

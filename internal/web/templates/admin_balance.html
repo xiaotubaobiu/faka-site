@@ -1,0 +1,5 @@
+{{define "content"}}
+<h2>给 {{.Data.target.Email}} 加余额</h2>
+<form method="post" action="/admin/balance"><input name="csrf" type="hidden" value="{{.CSRF}}">
+  <input name="id" type="hidden" value="{{.Data.target.ID}}">
+  <input name="amount" type="number" min="1" placeholder="额度(quota)" required><button>加余额</button></form>{{end}}
