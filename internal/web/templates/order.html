@@ -1,5 +1,5 @@
 {{define "content"}}
 <h2>订单 #{{.Data.order.ID}}({{.Data.order.Status}})</h2>
-<p>生成 {{.Data.order.SucceededCount}} 个,失败 {{.Data.order.FailedCount}} 个{{if gt .Data.order.RefundedAmount 0}},退款 {{.Data.order.RefundedAmount}}{{end}}</p>
+<p>每码 {{usd .Data.order.QuotaPerCode}}。生成 {{.Data.order.SucceededCount}} 个,失败 {{.Data.order.FailedCount}} 个{{if gt .Data.order.RefundedAmount 0}},退款 {{usd .Data.order.RefundedAmount}}{{end}}</p>
 <textarea readonly rows="8">{{range .Data.codes}}{{.}}
 {{end}}</textarea>{{end}}

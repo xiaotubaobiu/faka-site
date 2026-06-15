@@ -54,7 +54,7 @@ func (s *Server) getBalance(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) postBalance(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.ParseInt(r.PostFormValue("id"), 10, 64)
-	amount, _ := strconv.ParseInt(r.PostFormValue("amount"), 10, 64)
+	amount, _ := usdToQuota(r.PostFormValue("amount"))
 	s.store.AddBalance(context.Background(), id, currentUser(r).UserID, amount)
 	http.Redirect(w, r, "/admin/users", http.StatusSeeOther)
 }

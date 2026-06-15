@@ -24,7 +24,7 @@ func (s *Server) getBuy(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) postBuy(w http.ResponseWriter, r *http.Request) {
 	count, _ := strconv.Atoi(r.PostFormValue("count"))
-	quota, _ := strconv.ParseInt(r.PostFormValue("quota"), 10, 64)
+	quota, _ := usdToQuota(r.PostFormValue("quota"))
 	cfg := s.mustConfig()
 	if cfg.AccessToken == "" {
 		s.render(w, r, "buy.html", ViewData{Title: "购买", Data: map[string]any{"error": "管理员尚未配置 NewAPI"}})

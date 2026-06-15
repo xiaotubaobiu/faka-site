@@ -4,7 +4,6 @@ import (
 	"embed"
 	"html/template"
 	"net/http"
-	"strconv"
 
 	"faka-site/internal/auth"
 )
@@ -35,7 +34,7 @@ var pageNames = []string{
 func initTemplates() {
 	pages = map[string]*template.Template{}
 	for _, name := range pageNames {
-		base := template.Must(template.New("base").ParseFS(assets, "templates/layout.html"))
+		base := template.Must(template.New("base").Funcs(template.FuncMap{"usd": usd}).ParseFS(assets, "templates/layout.html"))
 		t := template.Must(base.ParseFS(assets, "templates/"+name))
 		pages[name] = t
 	}
@@ -47,7 +46,7 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, page string, dat
 	}
 	if sess, ok := r.Context().Value(ctxSessionKey).(*auth.Session); ok && sess != nil {
 		if u, err := s.store.UserByID(sess.UserID); err == nil {
-			data.User = &ViewUser{Email: u.Email, Role: u.Role, BalanceFmt: strconv.FormatInt(u.Balance, 10)}
+			data.User = &ViewUser{Email: u.Email, Role: u.Role, BalanceFmt: usd(u.Balance)}
 		}
 		data.CSRF = sess.CSRF
 	}
