@@ -71,6 +71,7 @@ func (s *Server) Routes() http.Handler {
 
 	mux.HandleFunc("GET /login", s.getLogin)
 	mux.HandleFunc("POST /login", s.postLogin)
+	mux.HandleFunc("GET /logout", s.postLogout)
 
 	authed := http.NewServeMux()
 	authed.HandleFunc("GET /", s.dashboard)
