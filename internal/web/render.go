@@ -8,7 +8,7 @@ import (
 	"faka-site/internal/auth"
 )
 
-//go:embed templates/*.html static/style.css
+//go:embed templates/*.html static/style.css static/pico.min.css
 var assets embed.FS
 
 type ViewUser struct {
