@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -30,7 +31,8 @@ func (s *Server) postCreate(w http.ResponseWriter, r *http.Request) {
 	pw := randPassword()
 	hash, _ := auth.HashPassword(pw)
 	if _, err := s.store.CreateUser(email, hash, "user"); err != nil {
-		s.render(w, r, "admin_create.html", ViewData{Title: "建账户", Data: map[string]any{"error": err.Error()}})
+		log.Printf("create user failed: email=%s: %v", email, err)
+		s.render(w, r, "admin_create.html", ViewData{Title: "建账户", Data: map[string]any{"error": "创建失败,该邮箱可能已存在"}})
 		return
 	}
 	var mailErr string
