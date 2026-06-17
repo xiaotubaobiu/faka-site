@@ -26,7 +26,7 @@
     {{end}}
   </nav>
   {{if .User}}<div class="side-foot">
-    <div class="who">{{.User.Email}}</div>
+    <div class="who">{{.User.Email}} <small class="role">{{if eq .User.Role "admin"}}管理员{{else}}普通用户{{end}}</small></div>
     <div class="bal">余额 {{.User.BalanceFmt}}</div>
     <a href="/logout" class="logout">退出</a>
   </div>{{end}}

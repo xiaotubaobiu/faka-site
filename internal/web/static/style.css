@@ -54,3 +54,4 @@ body{ margin:0; display:flex; min-height:100vh; }
 .stat-card .lbl{ color:var(--pico-muted-color, #888); font-size:.85rem; }
 .err{ color:var(--pico-color-red-550, #c00); }
 code{ word-break:break-all; }
+.side-foot .role{ opacity:.7; font-weight:400; font-size:.75rem; }
