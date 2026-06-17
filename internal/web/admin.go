@@ -125,3 +125,14 @@ func (s *Server) postUserReset(w http.ResponseWriter, r *http.Request) {
 		"users": users, "resetEmail": u.Email, "resetPassword": pw, "mailErr": mailErr,
 	}})
 }
+
+// validateNewPassword 校验新密码:长度≥6 且两次一致。返回友好错误串,合法则空串。
+func validateNewPassword(pw, confirm string) string {
+	if len(pw) < 6 {
+		return "密码至少 6 位"
+	}
+	if pw != confirm {
+		return "两次密码不一致"
+	}
+	return ""
+}
