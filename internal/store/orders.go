@@ -1,6 +1,9 @@
 package store
 
-import "context"
+import (
+	"context"
+	"strings"
+)
 
 type Order struct {
 	ID             int64
@@ -131,4 +134,58 @@ func (s *Store) SumUsedByUser(ctx context.Context, userID, since int64) (int64, 
 	err := s.db.QueryRowContext(ctx,
 		`SELECT COALESCE(SUM(total_cost),0) FROM orders WHERE user_id=? AND created_at>=?`, userID, since).Scan(&n)
 	return n, err
+}
+
+// CodesForOrders 批量取多订单的码,返回 orderID->codes(按 order_id,id 顺序)。空入参返回空 map。
+func (s *Store) CodesForOrders(ctx context.Context, orderIDs []int64) (map[int64][]string, error) {
+	out := map[int64][]string{}
+	if len(orderIDs) == 0 {
+		return out, nil
+	}
+	placeholders := make([]string, len(orderIDs))
+	args := make([]any, 0, len(orderIDs))
+	for i, id := range orderIDs {
+		placeholders[i] = "?"
+		args = append(args, id)
+	}
+	q := "SELECT order_id, code FROM order_codes WHERE order_id IN (" + strings.Join(placeholders, ",") + ") ORDER BY order_id, id"
+	rows, err := s.db.QueryContext(ctx, q, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var oid int64
+		var code string
+		if err := rows.Scan(&oid, &code); err != nil {
+			return nil, err
+		}
+		out[oid] = append(out[oid], code)
+	}
+	return out, rows.Err()
+}
+
+// OrdersByUserFiltered 返回某用户的订单;q 为空等价 OrdersByUser;q 非空按 id(文本)/status 模糊匹配。
+func (s *Store) OrdersByUserFiltered(ctx context.Context, userID int64, q string) ([]Order, error) {
+	if q == "" {
+		return s.OrdersByUser(ctx, userID)
+	}
+	like := "%" + q + "%"
+	rows, err := s.db.QueryContext(ctx,
+		`SELECT id,user_id,code_count,quota_per_code,total_cost,status,succeeded_count,failed_count,refunded_amount
+		 FROM orders WHERE user_id=? AND (CAST(id AS TEXT) LIKE ? OR status LIKE ?) ORDER BY id DESC`,
+		userID, like, like)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []Order
+	for rows.Next() {
+		var o Order
+		if err := rows.Scan(&o.ID, &o.UserID, &o.CodeCount, &o.QuotaPerCode, &o.TotalCost, &o.Status, &o.SucceededCount, &o.FailedCount, &o.RefundedAmount); err != nil {
+			return nil, err
+		}
+		out = append(out, o)
+	}
+	return out, rows.Err()
 }
