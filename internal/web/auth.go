@@ -47,7 +47,13 @@ func (s *Server) smtpMailer() mailSender {
 	if s.mailSender != nil {
 		return s.mailSender
 	}
-	return s.mailer()
+	// 注意:不能直接 `return s.mailer()` —— mailer() 返回 *mailer.Mailer,
+	// 若为 nil 具体指针,包成 mailSender 接口后会变成「非 nil 接口」,
+	// 导致调用方 `ms == nil` 失效、ms.Send 触发空指针 panic。必须显式返回 nil 接口。
+	if m := s.mailer(); m != nil {
+		return m
+	}
+	return nil
 }
 
 func (s *Server) getForgot(w http.ResponseWriter, r *http.Request) {

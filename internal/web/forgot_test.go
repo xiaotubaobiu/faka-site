@@ -55,3 +55,26 @@ func TestPostForgot_NoMailForUnknownUser(t *testing.T) {
 		t.Fatalf("must show same uniform message to avoid enumeration, got: %s", rec.Body.String())
 	}
 }
+
+// TestPostForgot_NoSMTPConfigured_NoPanic 覆盖生产路径:未注入 mailer 且站点未配 SMTP。
+// 修复前 smtpMailer() 把 mailer() 的 nil 指针包成「非 nil 接口」,导致 ms==nil 失效、
+// 对已存在用户调用 ms.Send 触发空指针 panic。此用例确保显式返回 nil 接口并回显配置提示。
+func TestPostForgot_NoSMTPConfigured_NoPanic(t *testing.T) {
+	st, _ := store.OpenInMemory()
+	if err := st.Migrate(); err != nil {
+		t.Fatal(err)
+	}
+	_, _ = st.CreateUser("real@x.com", "seedhash", "user")
+	// mailSender 不注入(nil),且 store 无 SMTP 配置 → smtpMailer 应返回 nil 接口
+	s := &Server{store: st, throttle: auth.NewThrottle(100), now: time.Now}
+	req := httptest.NewRequest("POST", "/forgot", strings.NewReader("email=real@x.com"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	rec := httptest.NewRecorder()
+	s.postForgot(rec, req)
+	if rec.Code != 200 {
+		t.Fatalf("expected 200 (no panic), got %d", rec.Code)
+	}
+	if !strings.Contains(rec.Body.String(), "SMTP 未配置") {
+		t.Fatalf("expected SMTP 未配置 message, got: %s", rec.Body.String())
+	}
+}
