@@ -1,0 +1,123 @@
+{{define "content"}}
+<h1 class="text-xl font-semibold">充值</h1>
+<p class="text-sm text-base-content/60 mt-1">扫码支付后自动到账,1¥ = {{.Data.rate}} 额度</p>
+
+<div class="grid grid-cols-1 lg:grid-cols-[480px_1fr] gap-6 mt-5">
+  <div class="card bg-base-100 border border-base-300 rounded-2xl shadow-sm">
+    <div class="card-body gap-4">
+      <form id="recharge-form" method="post" action="/recharge" class="contents">
+        {{if .Data.error}}<div class="alert alert-error"><span>{{.Data.error}}</span></div>{{end}}
+        <input name="csrf" type="hidden" value="{{.CSRF}}">
+
+        <div>
+          <label class="text-sm font-medium">支付方式</label>
+          <div class="join mt-1.5 w-full">
+            <input class="join-item btn flex-1" type="radio" name="method" value="alipay" id="m-alipay" {{if not .Data.method}}checked{{else}}{{if eq .Data.method "alipay"}}checked{{end}}{{end}}>
+            <label for="m-alipay" class="join-item btn flex-1 justify-center">支付宝</label>
+            <input class="join-item btn flex-1" type="radio" name="method" value="wxpay" id="m-wxpay">
+            <label for="m-wxpay" class="join-item btn flex-1 justify-center">微信支付</label>
+          </div>
+        </div>
+
+        <div>
+          <label class="text-sm font-medium">充值金额</label>
+          <div class="input input-bordered flex items-center mt-1.5">
+            <span class="text-base-content/60 mr-1">¥</span>
+            <input name="amount" id="rc-amount" type="number" min="0.01" step="0.01" value="10" class="grow bg-transparent outline-none">
+          </div>
+          <div class="flex flex-wrap gap-1.5 mt-2">
+            <button type="button" class="btn btn-xs btn-ghost border border-base-300" data-amount="10">¥10</button>
+            <button type="button" class="btn btn-xs btn-ghost border border-base-300" data-amount="50">¥50</button>
+            <button type="button" class="btn btn-xs btn-ghost border border-base-300" data-amount="100">¥100</button>
+            <button type="button" class="btn btn-xs btn-ghost border border-base-300" data-amount="200">¥200</button>
+          </div>
+        </div>
+
+        <div class="rounded-xl bg-base-200 p-4 mt-2">
+          <div class="flex justify-between text-sm"><span>支付金额</span><strong id="rc-pay">¥10.00</strong></div>
+          <div class="flex justify-between text-sm mt-2 text-base-content/60"><span>到账额度</span><span id="rc-quota">5,000,000 额度</span></div>
+          <div class="flex justify-between text-sm mt-1 text-base-content/60"><span>约合</span><span id="rc-usd">$10.00</span></div>
+        </div>
+
+        <button id="rc-submit" type="submit" class="btn btn-success btn-block mt-4">立即充值</button>
+        <p class="text-xs text-base-content/50 text-center -mt-1">支付后请等待几秒自动到账</p>
+      </form>
+    </div>
+  </div>
+
+  <div class="space-y-6">
+    {{if .User}}
+    <div class="card bg-base-100 border border-base-300 rounded-2xl shadow-sm">
+      <div class="card-body">
+        <h3 class="text-sm font-medium text-base-content/60">账户信息</h3>
+        <div class="stat px-0">
+          <div class="stat-title">当前余额</div>
+          <div class="stat-value text-2xl text-primary">{{.User.BalanceFmt}}</div>
+        </div>
+      </div>
+    </div>
+    {{end}}
+
+    <div class="card bg-base-100 border border-base-300 rounded-2xl shadow-sm">
+      <div class="card-body">
+        <h3 class="text-sm font-medium text-base-content/60">充值记录</h3>
+        {{if .Data.orders}}
+        <div class="overflow-x-auto mt-2">
+          <table class="table table-sm">
+            <thead><tr><th>#</th><th>金额</th><th>到账</th><th>方式</th><th>状态</th></tr></thead>
+            <tbody>
+            {{range .Data.orders}}
+            <tr>
+              <td><a class="link" href="/recharge/pay/{{.ID}}">{{.ID}}</a></td>
+              <td>¥{{fen2yuan .AmountFen}}</td>
+              <td>{{usd .Quota}}</td>
+              <td>{{if eq .Provider "alipay"}}支付宝{{else if eq .Provider "wxpay"}}微信{{else}}{{.Provider}}{{end}}</td>
+              <td>{{if eq .Status "paid"}}<span class="badge badge-success badge-xs">已到账</span>{{else}}<span class="badge badge-warning badge-xs">待支付</span>{{end}}</td>
+            </tr>
+            {{end}}
+            </tbody>
+          </table>
+        </div>
+        {{else}}
+        <p class="text-sm text-base-content/50 mt-2">暂无充值记录</p>
+        {{end}}
+      </div>
+    </div>
+  </div>
+</div>
+
+<script nonce="{{.Nonce}}">
+(function(){
+  var rate = parseInt({{.Data.rate}}, 10) || 500000;
+  var amount = document.getElementById('rc-amount');
+  var pay = document.getElementById('rc-pay');
+  var quota = document.getElementById('rc-quota');
+  var usdEl = document.getElementById('rc-usd');
+  var form = document.getElementById('recharge-form');
+  var submit = document.getElementById('rc-submit');
+
+  function fmtYuan(n){ return '¥' + n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+  function fmtUSD(n){ return '$' + n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+
+  function recalc(){
+    var y = parseFloat(amount.value);
+    if (!isFinite(y) || y < 0) y = 0;
+    var fen = Math.round(y * 100);
+    var q = Math.floor(fen * rate / 100);
+    pay.textContent = fmtYuan(y);
+    quota.textContent = q.toLocaleString('en-US') + ' 额度';
+    usdEl.textContent = fmtUSD(y);
+  }
+
+  amount.addEventListener('input', recalc);
+  document.querySelectorAll('[data-amount]').forEach(function(b){
+    b.addEventListener('click', function(){ amount.value = b.getAttribute('data-amount'); recalc(); });
+  });
+  form.addEventListener('submit', function(){
+    submit.disabled = true;
+    submit.textContent = '正在创建…';
+  });
+  recalc();
+})();
+</script>
+{{end}}

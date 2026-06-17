@@ -27,6 +27,20 @@ func (s *Store) CreateRechargeOrder(ctx context.Context, userID int64, provider,
 	return s.RechargeOrderByTradeNo(ctx, outTradeNo)
 }
 
+func (s *Store) RechargeOrder(ctx context.Context, id int64) (*RechargeOrder, error) {
+	o := &RechargeOrder{}
+	var paidAt int64
+	err := s.db.QueryRowContext(ctx,
+		`SELECT id,user_id,provider,out_trade_no,amount_fen,quota,COALESCE(trade_no,''),status,created_at,COALESCE(paid_at,0) FROM recharge_orders WHERE id=?`,
+		id).
+		Scan(&o.ID, &o.UserID, &o.Provider, &o.OutTradeNo, &o.AmountFen, &o.Quota, &o.TradeNo, &o.Status, &o.CreatedAt, &paidAt)
+	if err != nil {
+		return nil, err
+	}
+	o.PaidAt = paidAt
+	return o, nil
+}
+
 func (s *Store) RechargeOrderByTradeNo(ctx context.Context, outTradeNo string) (*RechargeOrder, error) {
 	o := &RechargeOrder{}
 	var paidAt int64

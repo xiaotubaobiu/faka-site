@@ -103,6 +103,8 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /forgot", s.getForgot)
 	mux.HandleFunc("POST /forgot", s.postForgot)
 	mux.HandleFunc("GET /logout", s.postLogout)
+	// PUBLIC: epay gateway calls this to confirm a recharge payment.
+	mux.HandleFunc("GET /recharge/notify", s.rechargeNotify)
 
 	authed := http.NewServeMux()
 	authed.HandleFunc("GET /", s.dashboard)
@@ -110,6 +112,9 @@ func (s *Server) Routes() http.Handler {
 	authed.HandleFunc("POST /buy", s.postBuy)
 	authed.HandleFunc("GET /orders", s.orders)
 	authed.HandleFunc("GET /orders/{id}", s.orderDetail)
+	authed.HandleFunc("GET /recharge", s.getRecharge)
+	authed.HandleFunc("POST /recharge", s.postRecharge)
+	authed.HandleFunc("GET /recharge/pay/{id}", s.rechargePay)
 	authed.HandleFunc("POST /logout", s.postLogout)
 
 	adminMux := http.NewServeMux()

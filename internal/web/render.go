@@ -2,11 +2,14 @@ package web
 
 import (
 	"embed"
+	"encoding/base64"
 	"html/template"
 	"net/http"
 	"strings"
 
 	"faka-site/internal/auth"
+
+	"github.com/skip2/go-qrcode"
 )
 
 //go:embed templates/*.html static/app.css static/htmx.min.js
@@ -30,6 +33,7 @@ var pages map[string]*template.Template
 
 var pageNames = []string{
 	"login.html", "forgot.html", "dashboard.html", "buy.html", "orders.html", "order.html",
+	"recharge.html", "recharge_pay.html",
 	"admin_users.html", "admin_create.html", "admin_reset.html", "admin_balance.html", "admin_config.html",
 }
 
@@ -45,6 +49,8 @@ func initTemplates() {
 		base := template.Must(template.New("base").Funcs(template.FuncMap{
 			"usd":       usd,
 			"joinCodes": joinCodes,
+			"qrDataURL": qrDataURL,
+			"fen2yuan":  fenToYuan,
 		}).ParseFS(assets, "templates/layout.html"))
 		files := []string{"templates/" + name}
 		for _, p := range pagePartials[name] {
@@ -57,6 +63,19 @@ func initTemplates() {
 
 // joinCodes 把码切片按换行拼接,供「复制全部」。
 func joinCodes(ss []string) string { return strings.Join(ss, "\n") }
+
+// qrDataURL returns a data: URL PNG (base64) of a QR code encoding s, for
+// use as an <img src>. Empty input yields an empty string.
+func qrDataURL(s string) string {
+	if s == "" {
+		return ""
+	}
+	png, err := qrcode.Encode(s, qrcode.Medium, 256)
+	if err != nil {
+		return ""
+	}
+	return "data:image/png;base64," + base64.StdEncoding.EncodeToString(png)
+}
 
 // renderBlock 仅渲染指定块(无 layout),用于 HTMX 片段。
 func (s *Server) renderBlock(w http.ResponseWriter, page, block string, data ViewData) {

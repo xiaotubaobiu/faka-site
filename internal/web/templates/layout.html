@@ -15,6 +15,7 @@
       {{$t := .Title}}
       <a href="/" class="h-11 flex items-center gap-3 px-5 border-l-4 {{if eq $t "概览"}}bg-base-200 text-primary font-semibold border-primary{{else}}text-base-content/70 hover:bg-base-200 border-transparent{{end}}">📊 概览</a>
       <a href="/buy" class="h-11 flex items-center gap-3 px-5 border-l-4 {{if eq $t "购买"}}bg-base-200 text-primary font-semibold border-primary{{else}}text-base-content/70 hover:bg-base-200 border-transparent{{end}}">🛒 买码</a>
+      <a href="/recharge" class="h-11 flex items-center gap-3 px-5 border-l-4 {{if eq $t "充值"}}bg-base-200 text-primary font-semibold border-primary{{else}}text-base-content/70 hover:bg-base-200 border-transparent{{end}}">💰 充值</a>
       <a href="/orders" class="h-11 flex items-center gap-3 px-5 border-l-4 {{if eq $t "订单"}}bg-base-200 text-primary font-semibold border-primary{{else}}text-base-content/70 hover:bg-base-200 border-transparent{{end}}">📦 订单</a>
       {{if eq .User.Role "admin"}}
       <div class="text-xs text-base-content/40 px-5 mt-3 mb-1 uppercase tracking-wide">管理</div>
@@ -61,6 +62,7 @@
       {{$t := .Title}}
       <a href="/" class="h-11 flex items-center gap-3 px-5 border-l-4 {{if eq $t "概览"}}bg-base-200 text-primary font-semibold border-primary{{else}}text-base-content/70 hover:bg-base-200 border-transparent{{end}}">📊 概览</a>
       <a href="/buy" class="h-11 flex items-center gap-3 px-5 border-l-4 {{if eq $t "购买"}}bg-base-200 text-primary font-semibold border-primary{{else}}text-base-content/70 hover:bg-base-200 border-transparent{{end}}">🛒 买码</a>
+      <a href="/recharge" class="h-11 flex items-center gap-3 px-5 border-l-4 {{if eq $t "充值"}}bg-base-200 text-primary font-semibold border-primary{{else}}text-base-content/70 hover:bg-base-200 border-transparent{{end}}">💰 充值</a>
       <a href="/orders" class="h-11 flex items-center gap-3 px-5 border-l-4 {{if eq $t "订单"}}bg-base-200 text-primary font-semibold border-primary{{else}}text-base-content/70 hover:bg-base-200 border-transparent{{end}}">📦 订单</a>
       {{if eq .User.Role "admin"}}
       <div class="text-xs text-base-content/40 px-5 mt-3 mb-1 uppercase tracking-wide">管理</div>
