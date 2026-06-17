@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"faka-site/internal/auth"
+	"faka-site/internal/epay"
 	"faka-site/internal/mailer"
 	"faka-site/internal/newapi"
 	"faka-site/internal/store"
@@ -99,5 +100,16 @@ func (s *Server) Routes() http.Handler {
 
 	mux.Handle("/", s.loadSession(s.csrfCheck(s.requireLogin(authed))))
 	mux.Handle("/admin/", s.loadSession(s.csrfCheck(s.requireAdmin(http.StripPrefix("/admin", adminMux)))))
+
+	// epay-gateway: protocol endpoints at root (what external merchants call),
+	// management under /epay/ to avoid colliding with faka-site's /admin/.
+	eh := epay.New(s.store, s.epayConfig)
+	mux.HandleFunc("/mapi.php", eh.Mapi)
+	mux.HandleFunc("/submit.php", eh.Submit)
+	mux.HandleFunc("/api.php", eh.API)
+	mux.HandleFunc("/sms/notify", eh.SmsNotify)
+	mux.HandleFunc("/epay/confirm", eh.WithAdminAuth(eh.Confirm))
+	mux.HandleFunc("/epay/admin", eh.WithAdminAuth(eh.Admin))
+	mux.HandleFunc("/epay/admin/", eh.WithAdminAuth(eh.Admin))
 	return s.securityHeaders(mux)
 }
