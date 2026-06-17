@@ -103,7 +103,7 @@ func (s *Server) orderDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	codes, _ := s.store.OrderCodes(r.Context(), id)
-	s.render(w, r, "order.html", ViewData{Title: "订单详情", Data: map[string]any{"order": o, "codes": codes}})
+	s.render(w, r, "order.html", ViewData{Title: "订单", Data: map[string]any{"order": o, "codes": codes}})
 }
 
 // friendlyBuyError 把内部错误映射成给用户的友好文案,原始错误仅落服务端日志。
