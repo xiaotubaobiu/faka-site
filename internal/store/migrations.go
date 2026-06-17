@@ -50,4 +50,17 @@ CREATE TABLE IF NOT EXISTS config (
 CREATE INDEX IF NOT EXISTS idx_orders_user ON orders(user_id);
 CREATE INDEX IF NOT EXISTS idx_codes_order ON order_codes(order_id);
 CREATE INDEX IF NOT EXISTS idx_ledger_user ON balance_ledger(user_id);
+CREATE TABLE IF NOT EXISTS recharge_orders (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id       INTEGER NOT NULL,
+  provider      TEXT NOT NULL,
+  out_trade_no  TEXT NOT NULL UNIQUE,
+  amount_fen    INTEGER NOT NULL,
+  quota         INTEGER NOT NULL,
+  trade_no      TEXT,
+  status        TEXT NOT NULL,
+  created_at    INTEGER NOT NULL,
+  paid_at       INTEGER
+);
+CREATE INDEX IF NOT EXISTS idx_recharge_user ON recharge_orders(user_id);
 `
