@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"faka-site/internal/auth"
 	"faka-site/internal/newapi"
@@ -70,8 +71,20 @@ func (s *Server) postBuy(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) orders(w http.ResponseWriter, r *http.Request) {
-	list, _ := s.store.OrdersByUser(r.Context(), currentUser(r).UserID)
-	s.render(w, r, "orders.html", ViewData{Title: "订单", Data: map[string]any{"orders": list}})
+	uid := currentUser(r).UserID
+	q := strings.TrimSpace(r.URL.Query().Get("q"))
+	list, _ := s.store.OrdersByUserFiltered(r.Context(), uid, q)
+	ids := make([]int64, 0, len(list))
+	for _, o := range list {
+		ids = append(ids, o.ID)
+	}
+	codes, _ := s.store.CodesForOrders(r.Context(), ids)
+	data := ViewData{Title: "订单", Data: map[string]any{"orders": list, "codes": codes, "q": q}}
+	if r.Header.Get("HX-Request") == "true" {
+		s.renderBlock(w, "orders.html", "orders_list", data)
+		return
+	}
+	s.render(w, r, "orders.html", data)
 }
 
 func (s *Server) orderDetail(w http.ResponseWriter, r *http.Request) {
