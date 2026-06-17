@@ -85,3 +85,17 @@ func (s *Store) SetUserPassword(id int64, hash string) error {
 	_, err := s.db.Exec(`UPDATE users SET password_hash=?, updated_at=? WHERE id=?`, hash, now(), id)
 	return err
 }
+
+// UserStats 返回启用用户数。
+func (s *Store) UserStats() (int64, error) {
+	var n int64
+	err := s.db.QueryRow(`SELECT COUNT(*) FROM users WHERE status=1`).Scan(&n)
+	return n, err
+}
+
+// TotalBalance 返回所有启用用户的余额之和。
+func (s *Store) TotalBalance() (int64, error) {
+	var n int64
+	err := s.db.QueryRow(`SELECT COALESCE(SUM(balance),0) FROM users WHERE status=1`).Scan(&n)
+	return n, err
+}
