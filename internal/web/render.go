@@ -9,7 +9,7 @@ import (
 	"faka-site/internal/auth"
 )
 
-//go:embed templates/*.html static/style.css static/pico.min.css
+//go:embed templates/*.html static/app.css static/htmx.min.js
 var assets embed.FS
 
 type ViewUser struct {
@@ -35,7 +35,9 @@ var pageNames = []string{
 
 // pagePartials:某页面需要额外引入的共享块文件(与 layout 一起 parse)。
 var pagePartials = map[string][]string{
-	"orders.html": {"orders_list.html"},
+	"orders.html":    {"orders_list.html"},
+	"dashboard.html": {"orders_list.html"},
+	"order.html":     {"orders_list.html"},
 }
 
 func initTemplates() {

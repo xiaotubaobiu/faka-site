@@ -1,9 +1,12 @@
 {{define "content"}}
-<h2>忘记密码</h2>
-{{if .Data.error}}<p class="err">{{.Data.error}}</p>{{end}}
-{{if .Data.msg}}<p>{{.Data.msg}}</p>{{end}}
-<form method="post" action="/forgot">
-  <input name="email" placeholder="注册邮箱" required><br>
-  <button>发送重置邮件</button>
+<div class="max-w-sm mx-auto">
+<h2 class="text-xl font-semibold mb-3">忘记密码</h2>
+{{if .Data.error}}<div class="alert alert-error mb-3"><span>{{.Data.error}}</span></div>{{end}}
+{{if .Data.msg}}<div class="alert alert-info mb-3"><span>{{.Data.msg}}</span></div>{{end}}
+<form method="post" action="/forgot" class="grid gap-3">
+  <input name="email" placeholder="注册邮箱" required class="input input-bordered">
+  <button class="btn btn-primary">发送重置邮件</button>
 </form>
-<p><a href="/login">返回登录</a></p>{{end}}
+<p class="mt-3 text-sm"><a class="link" href="/login">返回登录</a></p>
+</div>
+{{end}}

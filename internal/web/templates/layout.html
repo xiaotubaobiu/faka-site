@@ -1,50 +1,77 @@
 {{define "layout"}}<!doctype html>
-<html lang="zh"><head><meta charset="utf-8">
+<html lang="zh" data-theme="emerald"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{.Title}}</title>
-<link rel="stylesheet" href="/static/pico.min.css">
-<link rel="stylesheet" href="/static/style.css"></head>
-<body>
-<button class="menu-toggle" id="menuToggle" aria-label="菜单">☰</button>
-<div class="overlay" id="overlay"></div>
-
-<aside class="sidebar">
-  <div class="brand">🎫 发卡站</div>
-  <nav class="side-nav">
-    {{if .User}}
-      <a href="/" {{if eq .Title "概览"}}aria-current="page"{{end}}>概览</a>
-      <a href="/buy" {{if eq .Title "购买"}}aria-current="page"{{end}}>买码</a>
-      <a href="/orders" {{if eq .Title "订单"}}aria-current="page"{{end}}>订单</a>
-      {{if eq .User.Role "admin"}}
-      <hr>
-      <a href="/admin/users" {{if eq .Title "用户管理"}}aria-current="page"{{end}}>用户</a>
-      <a href="/admin/create" {{if eq .Title "建账户"}}aria-current="page"{{end}}>建账户</a>
-      <a href="/admin/config" {{if eq .Title "配置"}}aria-current="page"{{end}}>配置</a>
-      {{end}}
-    {{else}}
-      <a href="/login">登录</a>
-    {{end}}
-  </nav>
-  {{if .User}}<div class="side-foot">
-    <div class="who">{{.User.Email}} <small class="role">{{if eq .User.Role "admin"}}管理员{{else}}普通用户{{end}}</small></div>
-    <div class="bal">余额 {{.User.BalanceFmt}}</div>
-    <a href="/logout" class="logout">退出</a>
+<link rel="stylesheet" href="/static/app.css">
+<script src="/static/htmx.min.js" defer></script>
+</head>
+<body class="bg-base-200 min-h-screen">
+<div class="drawer lg:drawer-open">
+  <input id="nav-drawer" type="checkbox" class="drawer-toggle">
+  <div class="drawer-content flex flex-col min-h-screen">
+    <div class="navbar bg-base-100 border-b border-base-200 sticky top-0 z-10">
+      <label for="nav-drawer" class="btn btn-ghost btn-square lg:hidden">☰</label>
+      <a class="btn btn-ghost text-xl" href="/">🎫 发卡站</a>
+      <div class="menu menu-horizontal hidden lg:flex ml-2">
+        {{if .User}}
+        <a href="/" class="{{if eq .Title "概览"}}menu-active{{end}}">概览</a>
+        <a href="/buy" class="{{if eq .Title "购买"}}menu-active{{end}}">买码</a>
+        <a href="/orders" class="{{if eq .Title "订单"}}menu-active{{end}}">订单</a>
+        {{if eq .User.Role "admin"}}
+        <a href="/admin/users" class="{{if eq .Title "用户管理"}}menu-active{{end}}">用户</a>
+        <a href="/admin/create" class="{{if eq .Title "建账户"}}menu-active{{end}}">建账户</a>
+        <a href="/admin/config" class="{{if eq .Title "配置"}}menu-active{{end}}">配置</a>
+        {{end}}
+        {{end}}
+      </div>
+      <div class="ml-auto flex items-center gap-2">
+        {{if .User}}<span class="badge badge-outline">余额 {{.User.BalanceFmt}}</span>{{end}}
+        <button class="btn btn-ghost btn-circle btn-sm" data-theme-toggle aria-label="切换主题">🌓</button>
+      </div>
+    </div>
+    <main class="container mx-auto px-4 py-6 w-full max-w-3xl">{{template "content" .}}</main>
+  </div>
+  {{if .User}}<div class="drawer-side z-20">
+    <label for="nav-drawer" class="drawer-overlay"></label>
+    <aside class="bg-base-100 w-64 min-h-full p-4 flex flex-col">
+      <div class="font-bold text-lg mb-4">🎫 发卡站</div>
+      <nav class="menu menu-vertical gap-1">
+        <a href="/" class="{{if eq .Title "概览"}}menu-active{{end}}">概览</a>
+        <a href="/buy" class="{{if eq .Title "购买"}}menu-active{{end}}">买码</a>
+        <a href="/orders" class="{{if eq .Title "订单"}}menu-active{{end}}">订单</a>
+        {{if eq .User.Role "admin"}}
+        <div class="menu-title opacity-60 mt-2">管理</div>
+        <a href="/admin/users" class="{{if eq .Title "用户管理"}}menu-active{{end}}">用户</a>
+        <a href="/admin/create" class="{{if eq .Title "建账户"}}menu-active{{end}}">建账户</a>
+        <a href="/admin/config" class="{{if eq .Title "配置"}}menu-active{{end}}">配置</a>
+        {{end}}
+      </nav>
+      <div class="mt-auto pt-4 border-t border-base-200 text-sm">
+        <div class="opacity-70 break-all">{{.User.Email}}</div>
+        <div class="text-emerald-500 font-bold my-1">余额 {{.User.BalanceFmt}}</div>
+        <span class="badge badge-ghost badge-sm">{{if eq .User.Role "admin"}}管理员{{else}}普通用户{{end}}</span>
+        <a href="/logout" class="btn btn-ghost btn-xs btn-block mt-2">退出</a>
+      </div>
+    </aside>
   </div>{{end}}
-</aside>
-
-<main class="main">
-  <header class="topbar"><h1>{{.Title}}</h1></header>
-  <div class="content">{{template "content" .}}</div>
-</main>
-
+</div>
 <script nonce="{{.Nonce}}">
 (function(){
-  var b = document.body;
-  function toggle(){ b.classList.toggle('sidebar-open'); }
-  function close(){ b.classList.remove('sidebar-open'); }
-  var mt = document.getElementById('menuToggle'); if (mt) mt.addEventListener('click', toggle);
-  var ov = document.getElementById('overlay'); if (ov) ov.addEventListener('click', close);
-  document.querySelectorAll('.side-nav a').forEach(function(a){ a.addEventListener('click', close); });
+  var d = document.documentElement;
+  var saved = localStorage.getItem('theme');
+  if (saved) d.setAttribute('data-theme', saved);
+  document.querySelectorAll('[data-theme-toggle]').forEach(function(el){
+    el.addEventListener('click', function(){
+      var nt = d.getAttribute('data-theme') === 'dark' ? 'emerald' : 'dark';
+      d.setAttribute('data-theme', nt); localStorage.setItem('theme', nt);
+    });
+  });
+  function flash(el){ var o = el.textContent; el.textContent = '已复制 ✓'; setTimeout(function(){ el.textContent = o; }, 900); }
+  document.body.addEventListener('click', function(e){
+    var c = e.target.closest('[data-copy]'); if (c) { navigator.clipboard.writeText(c.getAttribute('data-copy')); flash(c); return; }
+    var a = e.target.closest('[data-copy-all]'); if (a) { navigator.clipboard.writeText(a.getAttribute('data-copy-all')); flash(a); return; }
+  });
+  document.querySelectorAll('.drawer-side a').forEach(function(a){ a.addEventListener('click', function(){ var cb = document.getElementById('nav-drawer'); if (cb) cb.checked = false; }); });
 })();
 </script>
 </body></html>{{end}}

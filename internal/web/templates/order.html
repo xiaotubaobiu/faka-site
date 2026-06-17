@@ -1,5 +1,10 @@
 {{define "content"}}
-<h2>订单 #{{.Data.order.ID}}({{.Data.order.Status}})</h2>
-<p>每码 {{usd .Data.order.QuotaPerCode}}。生成 {{.Data.order.SucceededCount}} 个,失败 {{.Data.order.FailedCount}} 个{{if gt .Data.order.RefundedAmount 0}},退款 {{usd .Data.order.RefundedAmount}}{{end}}</p>
-<textarea readonly rows="8">{{range .Data.codes}}{{.}}
-{{end}}</textarea>{{end}}
+<h2 class="text-xl font-semibold mb-1">订单 #{{.Data.order.ID}}</h2>
+<p class="opacity-70 mb-3">{{.Data.order.Status}} · 每 {{usd .Data.order.QuotaPerCode}} · 生成 {{.Data.order.SucceededCount}}{{if gt .Data.order.RefundedAmount 0}} · 退款 {{usd .Data.order.RefundedAmount}}{{end}}</p>
+{{if .Data.codes}}
+<div class="card bg-base-100 shadow border border-base-200"><div class="card-body">
+  <div class="flex flex-wrap gap-1.5">{{range .Data.codes}}<span class="kbd kbd-sm cursor-pointer" data-copy="{{.}}">{{.}}</span>{{end}}</div>
+  <button class="btn btn-ghost btn-sm mt-2" data-copy-all="{{joinCodes .Data.codes}}">复制全部</button>
+</div></div>
+{{else}}<p class="opacity-60">无码</p>{{end}}
+{{end}}

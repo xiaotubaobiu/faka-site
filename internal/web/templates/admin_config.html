@@ -1,19 +1,25 @@
 {{define "content"}}
-<h2>站点配置</h2>
-{{if .Data.msg}}<p>{{.Data.msg}}</p>{{end}}
-{{if .Data.testErr}}<p class="err">{{.Data.testErr}}</p>{{end}}
-{{if .Data.testOK}}<p>连接正常,且为管理员 ✓</p>{{end}}
-<form method="post" action="/admin/config"><input name="csrf" type="hidden" value="{{.CSRF}}">
-  <label>NewAPI 网址 <input name="newapi_base_url" value="{{.Data.cfg.BaseURL}}"></label><br>
-  <label>系统访问令牌 <input name="newapi_access_token" placeholder="留空=不修改"></label><br>
-  <label>管理员用户ID <input name="newapi_admin_user_id" value="{{.Data.cfg.AdminUserID}}"></label><br>
-  <hr>
-  <label>SMTP 主机 <input name="smtp_host" value="{{.Data.cfg.SMTPHost}}"></label>
-  <label>端口 <input name="smtp_port" value="{{.Data.cfg.SMTPPort}}"></label><br>
-  <label>用户 <input name="smtp_user" value="{{.Data.cfg.SMTPUser}}"></label>
-  <label>密码 <input name="smtp_pass" type="password" placeholder="留空=不修改"></label>
-  <label>发件人 <input name="smtp_from" value="{{.Data.cfg.SMTPFrom}}"></label><br>
-  <button>保存</button>
+<h2 class="text-xl font-semibold mb-3">站点配置</h2>
+{{if .Data.msg}}<div class="alert alert-success mb-3"><span>{{.Data.msg}}</span></div>{{end}}
+{{if .Data.testErr}}<div class="alert alert-error mb-3"><span>{{.Data.testErr}}</span></div>{{end}}
+{{if .Data.testOK}}<div class="alert alert-success mb-3"><span>连接正常,且为管理员 ✓</span></div>{{end}}
+<form method="post" action="/admin/config" class="card bg-base-100 shadow border border-base-200 p-4 grid gap-3">
+  <input name="csrf" type="hidden" value="{{.CSRF}}">
+  <fieldset class="border border-base-200 rounded p-3 grid gap-2">
+    <legend class="text-sm opacity-70 px-1">NewAPI</legend>
+    <label class="form-control"><span class="label-text">网址</span><input name="newapi_base_url" value="{{.Data.cfg.BaseURL}}" class="input input-bordered input-sm"></label>
+    <label class="form-control"><span class="label-text">系统访问令牌</span><input name="newapi_access_token" placeholder="留空=不修改" class="input input-bordered input-sm"></label>
+    <label class="form-control"><span class="label-text">管理员用户ID</span><input name="newapi_admin_user_id" value="{{.Data.cfg.AdminUserID}}" class="input input-bordered input-sm"></label>
+  </fieldset>
+  <fieldset class="border border-base-200 rounded p-3 grid gap-2">
+    <legend class="text-sm opacity-70 px-1">SMTP</legend>
+    <label class="form-control"><span class="label-text">主机</span><input name="smtp_host" value="{{.Data.cfg.SMTPHost}}" class="input input-bordered input-sm"></label>
+    <label class="form-control"><span class="label-text">端口</span><input name="smtp_port" value="{{.Data.cfg.SMTPPort}}" class="input input-bordered input-sm"></label>
+    <label class="form-control"><span class="label-text">用户</span><input name="smtp_user" value="{{.Data.cfg.SMTPUser}}" class="input input-bordered input-sm"></label>
+    <label class="form-control"><span class="label-text">密码</span><input name="smtp_pass" type="password" placeholder="留空=不修改" class="input input-bordered input-sm"></label>
+    <label class="form-control"><span class="label-text">发件人</span><input name="smtp_from" value="{{.Data.cfg.SMTPFrom}}" class="input input-bordered input-sm"></label>
+  </fieldset>
+  <button class="btn btn-primary">保存</button>
 </form>
-<form method="post" action="/admin/config/test" style="margin-top:1rem"><input name="csrf" type="hidden" value="{{.CSRF}}">
-  <button>测试 NewAPI 连接</button></form>{{end}}
+<form method="post" action="/admin/config/test" class="mt-3"><input name="csrf" type="hidden" value="{{.CSRF}}"><button class="btn btn-ghost">测试 NewAPI 连接</button></form>
+{{end}}

@@ -32,11 +32,19 @@ func (s *Server) dashboard(w http.ResponseWriter, r *http.Request) {
 	monthlyUsed, _ := s.store.SumUsedByUser(ctx, uid, since)
 	recent, _ := s.store.RecentOrdersByUser(ctx, uid, 5)
 
+	recentIDs := make([]int64, 0, len(recent))
+	for _, o := range recent {
+		recentIDs = append(recentIDs, o.ID)
+	}
+	recentCodes, _ := s.store.CodesForOrders(ctx, recentIDs)
+
 	d := map[string]any{
 		"Balance":      balance,
 		"OrderCount":   orderCount,
 		"MonthlyUsed":  monthlyUsed,
 		"RecentOrders": recent,
+		"orders":       recent,
+		"codes":        recentCodes,
 	}
 	if sess.Role == "admin" {
 		uc, _ := s.store.UserStats()

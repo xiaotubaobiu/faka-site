@@ -1,15 +1,14 @@
 {{define "content"}}
-<h2>用户管理</h2>
-<a href="/admin/create"><button>建账户</button></a>
-<table><tr><th>ID</th><th>邮箱</th><th>角色</th><th>余额</th><th>状态</th><th>操作</th></tr>
-{{range .Data.users}}<tr><td>{{.ID}}</td><td>{{.Email}}</td><td>{{.Role}}</td><td>{{usd .Balance}}</td><td>{{if eq .Status 1}}启用{{else}}禁用{{end}}</td>
-<td>
-  <a href="/admin/balance?id={{.ID}}">加余额</a>
-  <a href="/admin/reset?id={{.ID}}">重置密码</a>
-  {{if eq .Status 1}}
-  <form method="post" action="/admin/users/{{.ID}}/status" style="display:inline"><input name="csrf" type="hidden" value="{{$.CSRF}}"><input type="hidden" name="status" value="0"><button>禁用</button></form>
-  {{else}}
-  <form method="post" action="/admin/users/{{.ID}}/status" style="display:inline"><input name="csrf" type="hidden" value="{{$.CSRF}}"><input type="hidden" name="status" value="1"><button>启用</button></form>
-  {{end}}
+<h2 class="text-xl font-semibold mb-3">用户管理</h2>
+<a href="/admin/create" class="btn btn-primary btn-sm mb-3">建账户</a>
+<div class="overflow-x-auto">
+<table class="table table-sm">
+<tr><th>ID</th><th>邮箱</th><th>角色</th><th>余额</th><th>状态</th><th>操作</th></tr>
+{{range .Data.users}}<tr><td>{{.ID}}</td><td class="break-all">{{.Email}}</td><td>{{.Role}}</td><td>{{usd .Balance}}</td><td>{{if eq .Status 1}}<span class="badge badge-success badge-sm">启用</span>{{else}}<span class="badge badge-ghost badge-sm">禁用</span>{{end}}</td>
+<td class="whitespace-nowrap">
+  <a class="link" href="/admin/balance?id={{.ID}}">加余额</a> ·
+  <a class="link" href="/admin/reset?id={{.ID}}">重置密码</a> ·
+  <form method="post" action="/admin/users/{{.ID}}/status" class="inline"><input name="csrf" type="hidden" value="{{$.CSRF}}"><input type="hidden" name="status" value="{{if eq .Status 1}}0{{else}}1{{end}}"><button class="link">{{if eq .Status 1}}禁用{{else}}启用{{end}}</button></form>
 </td></tr>{{end}}
-</table>{{end}}
+</table></div>
+{{end}}

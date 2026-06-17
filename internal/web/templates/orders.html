@@ -1,5 +1,9 @@
 {{define "content"}}
-<h2>我的订单</h2>
-<table><tr><th>订单</th><th>数量</th><th>每码金额</th><th>状态</th></tr>
-{{range .Data.orders}}<tr><td><a href="/orders/{{.ID}}">#{{.ID}}</a></td><td>{{.CodeCount}}</td><td>{{usd .QuotaPerCode}}</td><td>{{.Status}}</td></tr>
-{{end}}</table>{{end}}
+<h2 class="text-xl font-semibold mb-3">订单</h2>
+<input name="q" class="input input-bordered input-sm mb-3 w-full max-w-xs"
+       placeholder="搜索订单号 / 状态…"
+       value="{{.Data.q}}"
+       hx-get="/orders" hx-target="#order-list"
+       hx-trigger="input changed delay:300ms" hx-include="this">
+<div id="order-list">{{template "orders_list" .}}</div>
+{{end}}
