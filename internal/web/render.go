@@ -37,7 +37,6 @@ var pageNames = []string{
 var pagePartials = map[string][]string{
 	"orders.html":    {"orders_list.html"},
 	"dashboard.html": {"orders_list.html"},
-	"order.html":     {"orders_list.html"},
 }
 
 func initTemplates() {
@@ -61,6 +60,10 @@ func joinCodes(ss []string) string { return strings.Join(ss, "\n") }
 
 // renderBlock 仅渲染指定块(无 layout),用于 HTMX 片段。
 func (s *Server) renderBlock(w http.ResponseWriter, page, block string, data ViewData) {
+	if pages == nil {
+		initTemplates()
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if data.Data == nil {
 		data.Data = map[string]any{}
 	}
