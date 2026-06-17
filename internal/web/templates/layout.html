@@ -6,55 +6,82 @@
 <script src="/static/htmx.min.js" defer></script>
 </head>
 <body class="bg-base-200 min-h-screen">
-<div class="drawer lg:drawer-open">
-  <input id="nav-drawer" type="checkbox" class="drawer-toggle">
-  <div class="drawer-content flex flex-col min-h-screen">
-    <div class="navbar bg-base-100 border-b border-base-200 sticky top-0 z-10">
-      <label for="nav-drawer" class="btn btn-ghost btn-square lg:hidden">☰</label>
-      <a class="btn btn-ghost text-xl" href="/">🎫 发卡站</a>
-      <div class="menu menu-horizontal hidden lg:flex ml-2">
-        {{if .User}}
-        <a href="/" class="{{if eq .Title "概览"}}menu-active{{end}}">概览</a>
-        <a href="/buy" class="{{if eq .Title "购买"}}menu-active{{end}}">买码</a>
-        <a href="/orders" class="{{if eq .Title "订单"}}menu-active{{end}}">订单</a>
-        {{if eq .User.Role "admin"}}
-        <a href="/admin/users" class="{{if eq .Title "用户管理"}}menu-active{{end}}">用户</a>
-        <a href="/admin/create" class="{{if eq .Title "建账户"}}menu-active{{end}}">建账户</a>
-        <a href="/admin/config" class="{{if eq .Title "配置"}}menu-active{{end}}">配置</a>
-        {{end}}
-        {{end}}
+<div class="flex min-h-screen">
+  {{if .User}}<aside id="app-sidebar" class="hidden lg:flex w-60 shrink-0 flex-col bg-base-100 border-r border-base-300 sticky top-0 h-screen">
+    <div class="h-14 flex items-center px-5 border-b border-base-300">
+      <span class="font-bold text-lg">🎫 发卡站</span>
+    </div>
+    <nav class="flex flex-col py-2 flex-1 overflow-y-auto">
+      {{$t := .Title}}
+      <a href="/" class="h-11 flex items-center gap-3 px-5 border-l-4 {{if eq $t "概览"}}bg-base-200 text-primary font-semibold border-primary{{else}}text-base-content/70 hover:bg-base-200 border-transparent{{end}}">📊 概览</a>
+      <a href="/buy" class="h-11 flex items-center gap-3 px-5 border-l-4 {{if eq $t "购买"}}bg-base-200 text-primary font-semibold border-primary{{else}}text-base-content/70 hover:bg-base-200 border-transparent{{end}}">🛒 买码</a>
+      <a href="/orders" class="h-11 flex items-center gap-3 px-5 border-l-4 {{if eq $t "订单"}}bg-base-200 text-primary font-semibold border-primary{{else}}text-base-content/70 hover:bg-base-200 border-transparent{{end}}">📦 订单</a>
+      {{if eq .User.Role "admin"}}
+      <div class="text-xs text-base-content/40 px-5 mt-3 mb-1 uppercase tracking-wide">管理</div>
+      <a href="/admin/users" class="h-11 flex items-center gap-3 px-5 border-l-4 {{if eq $t "用户管理"}}bg-base-200 text-primary font-semibold border-primary{{else}}text-base-content/70 hover:bg-base-200 border-transparent{{end}}">👤 用户</a>
+      <a href="/admin/create" class="h-11 flex items-center gap-3 px-5 border-l-4 {{if eq $t "建账户"}}bg-base-200 text-primary font-semibold border-primary{{else}}text-base-content/70 hover:bg-base-200 border-transparent{{end}}">➕ 建账户</a>
+      <a href="/admin/config" class="h-11 flex items-center gap-3 px-5 border-l-4 {{if eq $t "配置"}}bg-base-200 text-primary font-semibold border-primary{{else}}text-base-content/70 hover:bg-base-200 border-transparent{{end}}">⚙️ 配置</a>
+      {{end}}
+    </nav>
+    <div class="mt-auto m-3 p-3 rounded-xl bg-base-200">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-full bg-primary text-primary-content grid place-items-center font-semibold shrink-0">{{slice .User.Email 0 1}}</div>
+        <div class="min-w-0">
+          <div class="text-sm font-medium truncate">{{.User.Email}}</div>
+          <div class="mt-0.5">{{if eq .User.Role "admin"}}<span class="badge badge-success badge-xs">管理员</span>{{else}}<span class="badge badge-ghost badge-xs">普通用户</span>{{end}}</div>
+        </div>
       </div>
-      <div class="ml-auto flex items-center gap-2">
-        {{if .User}}<span class="badge badge-outline">余额 {{.User.BalanceFmt}}</span>{{end}}
+      <div class="text-xs text-base-content/60 mt-2">余额 <span class="text-base-content font-semibold">{{.User.BalanceFmt}}</span></div>
+      <a href="/logout" class="btn btn-ghost btn-xs btn-block mt-2">退出</a>
+    </div>
+  </aside>{{end}}
+
+  <div class="flex-1 min-w-0 flex flex-col min-h-screen">
+    <header class="h-14 sticky top-0 bg-base-100 border-b border-base-300 flex items-center justify-between px-6 z-10">
+      <div class="flex items-center gap-3 min-w-0">
+        {{if .User}}<button id="nav-toggle" class="btn btn-ghost btn-circle btn-sm lg:hidden" aria-label="菜单">☰</button>{{end}}
+        <span class="text-sm truncate"><span>发卡站</span> <span class="text-base-content/30">/</span> <span class="text-base-content/50">{{.Title}}</span></span>
+      </div>
+      <div class="flex items-center gap-2 shrink-0">
+        {{if .User}}<span class="badge badge-success badge-outline badge-lg">余额 {{.User.BalanceFmt}}</span>{{end}}
         <button class="btn btn-ghost btn-circle btn-sm" data-theme-toggle aria-label="切换主题">🌓</button>
       </div>
-    </div>
-    <main class="container mx-auto px-4 py-6 w-full max-w-3xl">{{template "content" .}}</main>
+    </header>
+    <main class="flex-1 bg-base-200 p-6"><div class="max-w-6xl mx-auto">{{template "content" .}}</div></main>
   </div>
-  {{if .User}}<div class="drawer-side z-20">
-    <label for="nav-drawer" class="drawer-overlay"></label>
-    <aside class="bg-base-100 w-64 min-h-full p-4 flex flex-col">
-      <div class="font-bold text-lg mb-4">🎫 发卡站</div>
-      <nav class="menu menu-vertical gap-1">
-        <a href="/" class="{{if eq .Title "概览"}}menu-active{{end}}">概览</a>
-        <a href="/buy" class="{{if eq .Title "购买"}}menu-active{{end}}">买码</a>
-        <a href="/orders" class="{{if eq .Title "订单"}}menu-active{{end}}">订单</a>
-        {{if eq .User.Role "admin"}}
-        <div class="menu-title opacity-60 mt-2">管理</div>
-        <a href="/admin/users" class="{{if eq .Title "用户管理"}}menu-active{{end}}">用户</a>
-        <a href="/admin/create" class="{{if eq .Title "建账户"}}menu-active{{end}}">建账户</a>
-        <a href="/admin/config" class="{{if eq .Title "配置"}}menu-active{{end}}">配置</a>
-        {{end}}
-      </nav>
-      <div class="mt-auto pt-4 border-t border-base-200 text-sm">
-        <div class="opacity-70 break-all">{{.User.Email}}</div>
-        <div class="text-emerald-500 font-bold my-1">余额 {{.User.BalanceFmt}}</div>
-        <span class="badge badge-ghost badge-sm">{{if eq .User.Role "admin"}}管理员{{else}}普通用户{{end}}</span>
-        <a href="/logout" class="btn btn-ghost btn-xs btn-block mt-2">退出</a>
-      </div>
-    </aside>
-  </div>{{end}}
 </div>
+{{if .User}}<div id="mobile-drawer" class="hidden fixed inset-0 z-40 lg:hidden">
+  <div class="absolute inset-0 bg-black/40" data-drawer-close></div>
+  <aside class="absolute left-0 top-0 h-full w-64 bg-base-100 border-r border-base-300 flex flex-col">
+    <div class="h-14 flex items-center justify-between px-5 border-b border-base-300">
+      <span class="font-bold text-lg">🎫 发卡站</span>
+      <button class="btn btn-ghost btn-circle btn-sm" data-drawer-close aria-label="关闭">✕</button>
+    </div>
+    <nav class="flex flex-col py-2 flex-1 overflow-y-auto">
+      {{$t := .Title}}
+      <a href="/" class="h-11 flex items-center gap-3 px-5 border-l-4 {{if eq $t "概览"}}bg-base-200 text-primary font-semibold border-primary{{else}}text-base-content/70 hover:bg-base-200 border-transparent{{end}}">📊 概览</a>
+      <a href="/buy" class="h-11 flex items-center gap-3 px-5 border-l-4 {{if eq $t "购买"}}bg-base-200 text-primary font-semibold border-primary{{else}}text-base-content/70 hover:bg-base-200 border-transparent{{end}}">🛒 买码</a>
+      <a href="/orders" class="h-11 flex items-center gap-3 px-5 border-l-4 {{if eq $t "订单"}}bg-base-200 text-primary font-semibold border-primary{{else}}text-base-content/70 hover:bg-base-200 border-transparent{{end}}">📦 订单</a>
+      {{if eq .User.Role "admin"}}
+      <div class="text-xs text-base-content/40 px-5 mt-3 mb-1 uppercase tracking-wide">管理</div>
+      <a href="/admin/users" class="h-11 flex items-center gap-3 px-5 border-l-4 {{if eq $t "用户管理"}}bg-base-200 text-primary font-semibold border-primary{{else}}text-base-content/70 hover:bg-base-200 border-transparent{{end}}">👤 用户</a>
+      <a href="/admin/create" class="h-11 flex items-center gap-3 px-5 border-l-4 {{if eq $t "建账户"}}bg-base-200 text-primary font-semibold border-primary{{else}}text-base-content/70 hover:bg-base-200 border-transparent{{end}}">➕ 建账户</a>
+      <a href="/admin/config" class="h-11 flex items-center gap-3 px-5 border-l-4 {{if eq $t "配置"}}bg-base-200 text-primary font-semibold border-primary{{else}}text-base-content/70 hover:bg-base-200 border-transparent{{end}}">⚙️ 配置</a>
+      {{end}}
+    </nav>
+    <div class="mt-auto m-3 p-3 rounded-xl bg-base-200">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-full bg-primary text-primary-content grid place-items-center font-semibold shrink-0">{{slice .User.Email 0 1}}</div>
+        <div class="min-w-0">
+          <div class="text-sm font-medium truncate">{{.User.Email}}</div>
+          <div class="mt-0.5">{{if eq .User.Role "admin"}}<span class="badge badge-success badge-xs">管理员</span>{{else}}<span class="badge badge-ghost badge-xs">普通用户</span>{{end}}</div>
+        </div>
+      </div>
+      <div class="text-xs text-base-content/60 mt-2">余额 <span class="text-base-content font-semibold">{{.User.BalanceFmt}}</span></div>
+      <a href="/logout" class="btn btn-ghost btn-xs btn-block mt-2">退出</a>
+    </div>
+  </aside>
+</div>{{end}}
 <script nonce="{{.Nonce}}">
 (function(){
   var d = document.documentElement;
@@ -71,7 +98,13 @@
     var c = e.target.closest('[data-copy]'); if (c) { navigator.clipboard.writeText(c.getAttribute('data-copy')); flash(c); return; }
     var a = e.target.closest('[data-copy-all]'); if (a) { navigator.clipboard.writeText(a.getAttribute('data-copy-all')); flash(a); return; }
   });
-  document.querySelectorAll('.drawer-side a').forEach(function(a){ a.addEventListener('click', function(){ var cb = document.getElementById('nav-drawer'); if (cb) cb.checked = false; }); });
+  var drawer = document.getElementById('mobile-drawer');
+  var toggle = document.getElementById('nav-toggle');
+  function closeDrawer(){ if (drawer) drawer.classList.add('hidden'); }
+  if (toggle && drawer) {
+    toggle.addEventListener('click', function(){ drawer.classList.toggle('hidden'); });
+    drawer.querySelectorAll('[data-drawer-close], nav a').forEach(function(el){ el.addEventListener('click', closeDrawer); });
+  }
 })();
 </script>
 </body></html>{{end}}
