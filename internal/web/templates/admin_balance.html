@@ -1,6 +1,6 @@
 {{define "content"}}
 <h2 class="text-xl font-semibold mb-3">给 {{.Data.target.Email}} 加余额</h2>
-<form method="post" action="/admin/balance" class="card bg-base-100 shadow border border-base-200 p-4 grid gap-3 max-w-md">
+<form method="post" action="/admin/balance" class="card bg-base-100 shadow border border-base-200 p-4 grid gap-3 max-w-xl">
   <input name="csrf" type="hidden" value="{{.CSRF}}">
   <input name="id" type="hidden" value="{{.Data.target.ID}}">
   <input name="amount" type="number" min="0.01" step="0.01" placeholder="金额($)" required class="input input-bordered">

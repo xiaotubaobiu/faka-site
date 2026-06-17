@@ -1,21 +1,131 @@
 {{define "content"}}
-<h2 class="text-xl font-semibold mb-3">购买兑换码</h2>
-{{if .Data.error}}<div class="alert alert-error mb-3"><span>{{.Data.error}}</span></div>{{end}}
-{{if .Data.result}}
-<div class="alert alert-success mb-3">
-  <span>订单 #{{.Data.result.OrderID}}:{{.Data.result.Status}},生成 {{.Data.result.Succeeded}} 个{{if gt .Data.result.Failed 0}},失败 {{.Data.result.Failed}} 已退款 {{usd .Data.result.Refunded}}{{end}}</span>
+<h1 class="text-xl font-semibold">购买兑换码</h1>
+<p class="text-sm text-base-content/60 mt-1">创建后自动生成 NewAPI 兑换码,金额从余额扣除</p>
+
+<div class="grid grid-cols-1 lg:grid-cols-[480px_1fr] gap-6 mt-5">
+  <div class="card bg-base-100 border border-base-300 rounded-2xl shadow-sm">
+    <div class="card-body gap-4">
+      <form id="buy-form" method="post" action="/buy" class="contents">
+        {{if .Data.error}}<div class="alert alert-error"><span>{{.Data.error}}</span></div>{{end}}
+        <input name="csrf" type="hidden" value="{{.CSRF}}">
+
+        <div>
+          <label class="text-sm font-medium">数量</label>
+          <div class="flex items-center gap-2 mt-1.5">
+            <button type="button" id="f-dec" class="btn btn-square btn-sm btn-ghost border border-base-300">−</button>
+            <input name="count" id="f-count" type="number" min="1" value="1" class="input input-bordered w-20 text-center">
+            <button type="button" id="f-inc" class="btn btn-square btn-sm btn-ghost border border-base-300">+</button>
+          </div>
+          <div class="flex gap-1.5 mt-2">
+            <button type="button" class="btn btn-xs btn-ghost border border-base-300" data-count="1">1</button>
+            <button type="button" class="btn btn-xs btn-ghost border border-base-300" data-count="5">5</button>
+            <button type="button" class="btn btn-xs btn-ghost border border-base-300" data-count="10">10</button>
+            <button type="button" class="btn btn-xs btn-ghost border border-base-300" data-count="20">20</button>
+          </div>
+        </div>
+
+        <div>
+          <label class="text-sm font-medium">每码金额</label>
+          <div class="input input-bordered flex items-center mt-1.5">
+            <span class="text-base-content/60 mr-1">$</span>
+            <input name="quota" id="f-quota" type="number" min="0.01" step="0.01" value="1" class="grow bg-transparent outline-none">
+          </div>
+          <div class="flex flex-wrap gap-1.5 mt-2">
+            <button type="button" class="btn btn-xs btn-ghost border border-base-300" data-quota="1">$1</button>
+            <button type="button" class="btn btn-xs btn-ghost border border-base-300" data-quota="5">$5</button>
+            <button type="button" class="btn btn-xs btn-ghost border border-base-300" data-quota="10">$10</button>
+            <button type="button" class="btn btn-xs btn-ghost border border-base-300" data-quota="20">$20</button>
+            <button type="button" class="btn btn-xs btn-ghost border border-base-300" data-quota="50">$50</button>
+            <button type="button" class="btn btn-xs btn-ghost border border-base-300" data-quota="100">$100</button>
+          </div>
+        </div>
+
+        <div class="rounded-xl bg-base-200 p-4 mt-2">
+          <div class="flex justify-between text-sm"><span>预计总价</span><strong id="f-total">$1.00</strong></div>
+          <div class="flex justify-between text-sm mt-2 text-base-content/60"><span>预计额度</span><span id="f-tokens">500,000 tokens</span></div>
+        </div>
+
+        <button id="f-submit" type="submit" class="btn btn-success btn-block mt-4">立即购买</button>
+        <p class="text-xs text-base-content/50 text-center -mt-1">余额充足时购买后自动生成兑换码</p>
+      </form>
+
+      {{if .Data.result}}
+      <div class="alert alert-success">
+        <span>订单 #{{.Data.result.OrderID}}:{{.Data.result.Status}},生成 {{.Data.result.Succeeded}} 个{{if gt .Data.result.Failed 0}},失败 {{.Data.result.Failed}} 已退款 {{usd .Data.result.Refunded}}{{end}}</span>
+      </div>
+      {{if .Data.result.Codes}}
+      <div class="card bg-base-200 border border-base-200">
+        <div class="card-body">
+          <div class="flex flex-wrap gap-1.5">{{range .Data.result.Codes}}<span class="kbd kbd-sm cursor-pointer" data-copy="{{.}}">{{.}}</span>{{end}}</div>
+          <button class="btn btn-ghost btn-sm mt-2" data-copy-all="{{joinCodes .Data.result.Codes}}">复制全部</button>
+        </div>
+      </div>{{end}}
+      {{end}}
+    </div>
+  </div>
+
+  <div class="space-y-6">
+    {{if .User}}
+    <div class="card bg-base-100 border border-base-300 rounded-2xl shadow-sm">
+      <div class="card-body">
+        <h3 class="text-sm font-medium text-base-content/60">账户信息</h3>
+        <div class="stat px-0">
+          <div class="stat-title">当前余额</div>
+          <div class="stat-value text-2xl text-primary">{{.User.BalanceFmt}}</div>
+        </div>
+      </div>
+    </div>
+    {{end}}
+
+    <div class="card bg-base-100 border border-base-300 rounded-2xl shadow-sm">
+      <div class="card-body">
+        <h3 class="text-sm font-medium text-base-content/60">购买说明</h3>
+        <ul class="text-sm text-base-content/80 list-disc pl-4 mt-2 space-y-1.5">
+          <li>兑换码创建后可在「<a class="link" href="/orders">订单</a>」页查看与复制</li>
+          <li>金额按 <strong>数量 × 每码金额</strong> 从余额扣除</li>
+          <li>1$ = 500,000 额度</li>
+        </ul>
+      </div>
+    </div>
+  </div>
 </div>
-{{if .Data.result.Codes}}
-<div class="card bg-base-100 shadow border border-base-200 mb-4"><div class="card-body">
-  <div class="flex flex-wrap gap-1.5">{{range .Data.result.Codes}}<span class="kbd kbd-sm cursor-pointer" data-copy="{{.}}">{{.}}</span>{{end}}</div>
-  <button class="btn btn-ghost btn-sm mt-2" data-copy-all="{{joinCodes .Data.result.Codes}}">复制全部</button>
-</div></div>{{end}}
-{{end}}
-<form method="post" action="/buy" class="card bg-base-100 shadow border border-base-200 p-4 grid gap-3 max-w-md">
-  <input name="csrf" type="hidden" value="{{.CSRF}}">
-  <label class="form-control"><span class="label-text mb-1">数量</span><input name="count" type="number" min="1" value="1" class="input input-bordered"></label>
-  <label class="form-control"><span class="label-text mb-1">每码金额($)</span><input name="quota" type="number" min="0.01" step="0.01" value="1" class="input input-bordered"></label>
-  <p class="text-xs opacity-60">合计 = 数量 × 每码金额($)(1$ = 500000 额度)</p>
-  <button class="btn btn-primary">购买</button>
-</form>
+
+<script nonce="{{.Nonce}}">
+(function(){
+  var count = document.getElementById('f-count');
+  var quota = document.getElementById('f-quota');
+  var total = document.getElementById('f-total');
+  var tokens = document.getElementById('f-tokens');
+  var form = document.getElementById('buy-form');
+  var submit = document.getElementById('f-submit');
+
+  function fmtMoney(n){ return '$' + n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+  function fmtTokens(n){ return n.toLocaleString('en-US') + ' tokens'; }
+
+  function recalc(){
+    var c = parseFloat(count.value);
+    var q = parseFloat(quota.value);
+    if (!isFinite(c) || c < 1) c = 1;
+    if (!isFinite(q) || q < 0) q = 0;
+    var t = c * q;
+    total.textContent = fmtMoney(t);
+    tokens.textContent = fmtTokens(t * 500000);
+  }
+
+  document.getElementById('f-inc').addEventListener('click', function(){ count.value = Math.max(1, (parseInt(count.value,10)||1) + 1); recalc(); });
+  document.getElementById('f-dec').addEventListener('click', function(){ count.value = Math.max(1, (parseInt(count.value,10)||1) - 1); recalc(); });
+  count.addEventListener('input', recalc);
+  quota.addEventListener('input', recalc);
+
+  document.querySelectorAll('[data-count]').forEach(function(b){ b.addEventListener('click', function(){ count.value = b.getAttribute('data-count'); recalc(); }); });
+  document.querySelectorAll('[data-quota]').forEach(function(b){ b.addEventListener('click', function(){ quota.value = b.getAttribute('data-quota'); recalc(); }); });
+
+  form.addEventListener('submit', function(){
+    submit.disabled = true;
+    submit.textContent = '正在创建…';
+  });
+
+  recalc();
+})();
+</script>
 {{end}}

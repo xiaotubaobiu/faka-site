@@ -1,7 +1,7 @@
 {{define "content"}}
 <h2 class="text-xl font-semibold mb-3">建账户</h2>
 {{if .Data.error}}<div class="alert alert-error mb-3"><span>{{.Data.error}}</span></div>{{end}}
-<form method="post" action="/admin/create" class="card bg-base-100 shadow border border-base-200 p-4 grid gap-3 max-w-md">
+<form method="post" action="/admin/create" class="card bg-base-100 shadow border border-base-200 p-4 grid gap-3 max-w-xl">
   <input name="csrf" type="hidden" value="{{.CSRF}}">
   <input name="email" placeholder="用户邮箱" value="{{.Data.email}}" required class="input input-bordered">
   <input name="password" type="password" placeholder="密码(≥6位)" required class="input input-bordered">
