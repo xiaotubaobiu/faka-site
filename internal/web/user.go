@@ -18,7 +18,32 @@ func currentUser(r *http.Request) *auth.Session {
 }
 
 func (s *Server) dashboard(w http.ResponseWriter, r *http.Request) {
-	s.render(w, r, "dashboard.html", ViewData{Title: "首页"})
+	ctx := r.Context()
+	sess := currentUser(r)
+	uid := sess.UserID
+	u, _ := s.store.UserByID(uid)
+	var balance int64
+	if u != nil {
+		balance = u.Balance
+	}
+	orderCount, _ := s.store.CountOrdersByUser(ctx, uid)
+	since := s.now().AddDate(0, 0, -30).Unix()
+	monthlyUsed, _ := s.store.SumUsedByUser(ctx, uid, since)
+	recent, _ := s.store.RecentOrdersByUser(ctx, uid, 5)
+
+	d := map[string]any{
+		"Balance":      balance,
+		"OrderCount":   orderCount,
+		"MonthlyUsed":  monthlyUsed,
+		"RecentOrders": recent,
+	}
+	if sess.Role == "admin" {
+		uc, _ := s.store.UserStats()
+		tb, _ := s.store.TotalBalance()
+		d["UserCount"] = uc
+		d["PlatformBalance"] = tb
+	}
+	s.render(w, r, "dashboard.html", ViewData{Title: "概览", Data: d})
 }
 
 func (s *Server) getBuy(w http.ResponseWriter, r *http.Request) {
