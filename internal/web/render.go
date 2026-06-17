@@ -29,7 +29,7 @@ var pages map[string]*template.Template
 
 var pageNames = []string{
 	"login.html", "forgot.html", "dashboard.html", "buy.html", "orders.html", "order.html",
-	"admin_users.html", "admin_create.html", "admin_balance.html", "admin_config.html",
+	"admin_users.html", "admin_create.html", "admin_reset.html", "admin_balance.html", "admin_config.html",
 }
 
 func initTemplates() {
