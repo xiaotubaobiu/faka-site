@@ -63,4 +63,24 @@ CREATE TABLE IF NOT EXISTS recharge_orders (
   paid_at       INTEGER
 );
 CREATE INDEX IF NOT EXISTS idx_recharge_user ON recharge_orders(user_id);
+CREATE TABLE IF NOT EXISTS epay_orders (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  trade_no TEXT UNIQUE NOT NULL,
+  out_trade_no TEXT NOT NULL,
+  pid INTEGER NOT NULL,
+  type TEXT NOT NULL DEFAULT 'alipay',
+  name TEXT NOT NULL,
+  money TEXT NOT NULL,
+  status INTEGER NOT NULL DEFAULT 0,
+  notify_url TEXT NOT NULL,
+  return_url TEXT NOT NULL DEFAULT '',
+  param TEXT NOT NULL DEFAULT '',
+  alipay_trade_no TEXT NOT NULL DEFAULT '',
+  created_at DATETIME NOT NULL,
+  paid_at DATETIME,
+  notify_count INTEGER NOT NULL DEFAULT 0,
+  notified INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_epay_orders_out_trade_no ON epay_orders(out_trade_no, pid);
+CREATE INDEX IF NOT EXISTS idx_epay_orders_status ON epay_orders(status);
 `
