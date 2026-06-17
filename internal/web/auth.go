@@ -13,10 +13,7 @@ func (s *Server) getLogin(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) postLogin(w http.ResponseWriter, r *http.Request) {
 	email := strings.TrimSpace(r.PostFormValue("email"))
-	ip := r.RemoteAddr
-	if f := r.Header.Get("X-Forwarded-For"); f != "" {
-		ip = strings.SplitN(f, ",", 2)[0]
-	}
+	ip := clientIP(r)
 	if !s.throttle.Allow(ip + "|" + email) {
 		s.render(w, r, "login.html", ViewData{Title: "登录", Data: map[string]any{"error": "尝试过多,稍后再试"}})
 		return
