@@ -5,13 +5,46 @@
 <link rel="stylesheet" href="/static/pico.min.css">
 <link rel="stylesheet" href="/static/style.css"></head>
 <body>
-<nav class="nav">
-  <a href="/">发卡站</a>
-  {{if .User}}<span class="bal">余额:{{.User.BalanceFmt}}</span>
-    <a href="/buy">买码</a><a href="/orders">订单</a>
-    {{if eq .User.Role "admin"}}<a href="/admin/users">用户管理</a><a href="/admin/create">建账户</a><a href="/admin/config">配置</a>{{end}}
-    <a href="/logout">退出({{.User.Email}})</a>
-  {{else}}<a href="/login">登录</a>{{end}}
-</nav>
-<main>{{template "content" .}}</main>
+<button class="menu-toggle" id="menuToggle" aria-label="菜单">☰</button>
+<div class="overlay" id="overlay"></div>
+
+<aside class="sidebar">
+  <div class="brand">🎫 发卡站</div>
+  <nav class="side-nav">
+    {{if .User}}
+      <a href="/" {{if eq .Title "概览"}}aria-current="page"{{end}}>概览</a>
+      <a href="/buy" {{if eq .Title "购买"}}aria-current="page"{{end}}>买码</a>
+      <a href="/orders" {{if eq .Title "订单"}}aria-current="page"{{end}}>订单</a>
+      {{if eq .User.Role "admin"}}
+      <hr>
+      <a href="/admin/users" {{if eq .Title "用户管理"}}aria-current="page"{{end}}>用户</a>
+      <a href="/admin/create" {{if eq .Title "建账户"}}aria-current="page"{{end}}>建账户</a>
+      <a href="/admin/config" {{if eq .Title "配置"}}aria-current="page"{{end}}>配置</a>
+      {{end}}
+    {{else}}
+      <a href="/login">登录</a>
+    {{end}}
+  </nav>
+  {{if .User}}<div class="side-foot">
+    <div class="who">{{.User.Email}}</div>
+    <div class="bal">余额 {{.User.BalanceFmt}}</div>
+    <a href="/logout" class="logout">退出</a>
+  </div>{{end}}
+</aside>
+
+<main class="main">
+  <header class="topbar"><h1>{{.Title}}</h1></header>
+  <div class="content">{{template "content" .}}</div>
+</main>
+
+<script nonce="{{.Nonce}}">
+(function(){
+  var b = document.body;
+  function toggle(){ b.classList.toggle('sidebar-open'); }
+  function close(){ b.classList.remove('sidebar-open'); }
+  var mt = document.getElementById('menuToggle'); if (mt) mt.addEventListener('click', toggle);
+  var ov = document.getElementById('overlay'); if (ov) ov.addEventListener('click', close);
+  document.querySelectorAll('.side-nav a').forEach(function(a){ a.addEventListener('click', close); });
+})();
+</script>
 </body></html>{{end}}
