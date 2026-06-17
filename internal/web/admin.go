@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"faka-site/internal/auth"
 )
@@ -27,25 +28,19 @@ func (s *Server) getCreate(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) postCreate(w http.ResponseWriter, r *http.Request) {
-	email := r.PostFormValue("email")
-	pw := randPassword()
+	email := strings.TrimSpace(r.PostFormValue("email"))
+	pw := r.PostFormValue("password")
+	if msg := validateNewPassword(pw, r.PostFormValue("confirm")); msg != "" {
+		s.render(w, r, "admin_create.html", ViewData{Title: "建账户", Data: map[string]any{"error": msg, "email": email}})
+		return
+	}
 	hash, _ := auth.HashPassword(pw)
 	if _, err := s.store.CreateUser(email, hash, "user"); err != nil {
 		log.Printf("create user failed: email=%s: %v", email, err)
-		s.render(w, r, "admin_create.html", ViewData{Title: "建账户", Data: map[string]any{"error": "创建失败,该邮箱可能已存在"}})
+		s.render(w, r, "admin_create.html", ViewData{Title: "建账户", Data: map[string]any{"error": "创建失败,该邮箱可能已存在", "email": email}})
 		return
 	}
-	var mailErr string
-	if m := s.mailer(); m != nil {
-		if err := m.Send(email, "你的发卡站账户", "邮箱:"+email+"\n初始密码:"+pw+"\n请登录后修改。"); err != nil {
-			mailErr = err.Error()
-		}
-	} else {
-		mailErr = "SMTP 未配置"
-	}
-	s.render(w, r, "admin_create.html", ViewData{Title: "建账户", Data: map[string]any{
-		"newEmail": email, "newPassword": pw, "mailErr": mailErr,
-	}})
+	http.Redirect(w, r, "/admin/users", http.StatusSeeOther)
 }
 
 func (s *Server) getBalance(w http.ResponseWriter, r *http.Request) {
