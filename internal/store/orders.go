@@ -97,3 +97,38 @@ func (s *Store) OrdersByUser(ctx context.Context, userID int64) ([]Order, error)
 	}
 	return out, rows.Err()
 }
+
+// CountOrdersByUser 返回某用户的订单总数。
+func (s *Store) CountOrdersByUser(ctx context.Context, userID int64) (int64, error) {
+	var n int64
+	err := s.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM orders WHERE user_id=?`, userID).Scan(&n)
+	return n, err
+}
+
+// RecentOrdersByUser 返回某用户最近的 limit 条订单(id 倒序)。
+func (s *Store) RecentOrdersByUser(ctx context.Context, userID int64, limit int) ([]Order, error) {
+	rows, err := s.db.QueryContext(ctx,
+		`SELECT id,user_id,code_count,quota_per_code,total_cost,status,succeeded_count,failed_count,refunded_amount
+		 FROM orders WHERE user_id=? ORDER BY created_at DESC, id DESC LIMIT ?`, userID, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []Order
+	for rows.Next() {
+		var o Order
+		if err := rows.Scan(&o.ID, &o.UserID, &o.CodeCount, &o.QuotaPerCode, &o.TotalCost, &o.Status, &o.SucceededCount, &o.FailedCount, &o.RefundedAmount); err != nil {
+			return nil, err
+		}
+		out = append(out, o)
+	}
+	return out, rows.Err()
+}
+
+// SumUsedByUser 返回某用户 created_at>=since 的订单 total_cost 之和(无则 0)。
+func (s *Store) SumUsedByUser(ctx context.Context, userID, since int64) (int64, error) {
+	var n int64
+	err := s.db.QueryRowContext(ctx,
+		`SELECT COALESCE(SUM(total_cost),0) FROM orders WHERE user_id=? AND created_at>=?`, userID, since).Scan(&n)
+	return n, err
+}
