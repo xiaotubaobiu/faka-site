@@ -1,0 +1,9 @@
+{
+  "name": "faka-site-assets",
+  "private": true,
+  "scripts": { "css": "tailwindcss -i src/input.css -o internal/web/static/app.css --minify" },
+  "devDependencies": {
+    "tailwindcss": "^3.4.17",
+    "daisyui": "^4.12.23"
+  }
+}

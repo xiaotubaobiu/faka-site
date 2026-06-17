@@ -4,3 +4,4 @@
 /faka-site
 *.sqlite
 *.sqlite-*
+/node_modules
