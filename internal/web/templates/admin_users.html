@@ -6,7 +6,7 @@
 {{range .Data.users}}<tr><td>{{.ID}}</td><td>{{.Email}}</td><td>{{.Role}}</td><td>{{usd .Balance}}</td><td>{{if eq .Status 1}}启用{{else}}禁用{{end}}</td>
 <td>
   <a href="/admin/balance?id={{.ID}}">加余额</a>
-  <form method="post" action="/admin/users/{{.ID}}/reset" style="display:inline"><input name="csrf" type="hidden" value="{{$.CSRF}}"><button>重置密码</button></form>
+  <a href="/admin/reset?id={{.ID}}">重置密码</a>
   {{if eq .Status 1}}
   <form method="post" action="/admin/users/{{.ID}}/status" style="display:inline"><input name="csrf" type="hidden" value="{{$.CSRF}}"><input type="hidden" name="status" value="0"><button>禁用</button></form>
   {{else}}

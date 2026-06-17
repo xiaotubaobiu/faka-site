@@ -91,7 +91,8 @@ func (s *Server) Routes() http.Handler {
 	adminMux.HandleFunc("POST /config", s.postConfig)
 	adminMux.HandleFunc("POST /config/test", s.postConfigTest)
 	adminMux.HandleFunc("POST /users/{id}/status", s.postUserStatus)
-	adminMux.HandleFunc("POST /users/{id}/reset", s.postUserReset)
+	adminMux.HandleFunc("GET /reset", s.getReset)
+	adminMux.HandleFunc("POST /reset", s.postReset)
 
 	mux.Handle("/", s.loadSession(s.csrfCheck(s.requireLogin(authed))))
 	mux.Handle("/admin/", s.loadSession(s.csrfCheck(s.requireAdmin(http.StripPrefix("/admin", adminMux)))))

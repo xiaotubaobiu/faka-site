@@ -97,28 +97,23 @@ func (s *Server) postUserStatus(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/admin/users", http.StatusSeeOther)
 }
 
-func (s *Server) postUserReset(w http.ResponseWriter, r *http.Request) {
-	id, _ := strconv.ParseInt(r.PathValue("id"), 10, 64)
-	u, err := s.store.UserByID(id)
-	if err != nil {
-		http.Redirect(w, r, "/admin/users", http.StatusSeeOther)
+func (s *Server) getReset(w http.ResponseWriter, r *http.Request) {
+	id, _ := strconv.ParseInt(r.URL.Query().Get("id"), 10, 64)
+	u, _ := s.store.UserByID(id)
+	s.render(w, r, "admin_reset.html", ViewData{Title: "重置密码", Data: map[string]any{"target": u}})
+}
+
+func (s *Server) postReset(w http.ResponseWriter, r *http.Request) {
+	id, _ := strconv.ParseInt(r.PostFormValue("id"), 10, 64)
+	pw := r.PostFormValue("password")
+	if msg := validateNewPassword(pw, r.PostFormValue("confirm")); msg != "" {
+		u, _ := s.store.UserByID(id)
+		s.render(w, r, "admin_reset.html", ViewData{Title: "重置密码", Data: map[string]any{"target": u, "error": msg}})
 		return
 	}
-	pw := randPassword()
 	hash, _ := auth.HashPassword(pw)
 	s.store.SetUserPassword(id, hash)
-	var mailErr string
-	if m := s.mailer(); m != nil {
-		if err := m.Send(u.Email, "发卡站密码已重置", "邮箱:"+u.Email+"\n新密码:"+pw); err != nil {
-			mailErr = err.Error()
-		}
-	} else {
-		mailErr = "SMTP 未配置"
-	}
-	users, _ := s.store.ListUsers()
-	s.render(w, r, "admin_users.html", ViewData{Title: "用户管理", Data: map[string]any{
-		"users": users, "resetEmail": u.Email, "resetPassword": pw, "mailErr": mailErr,
-	}})
+	http.Redirect(w, r, "/admin/users", http.StatusSeeOther)
 }
 
 // validateNewPassword 校验新密码:长度≥6 且两次一致。返回友好错误串,合法则空串。

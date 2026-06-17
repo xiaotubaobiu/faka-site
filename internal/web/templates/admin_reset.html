@@ -1,0 +1,9 @@
+{{define "content"}}
+<h2>重置 {{.Data.target.Email}} 的密码</h2>
+{{if .Data.error}}<p class="err">{{.Data.error}}</p>{{end}}
+<form method="post" action="/admin/reset"><input name="csrf" type="hidden" value="{{.CSRF}}">
+  <input name="id" type="hidden" value="{{.Data.target.ID}}">
+  <input name="password" type="password" placeholder="新密码(≥6位)" required><br>
+  <input name="confirm" type="password" placeholder="确认新密码" required><br>
+  <button>重置</button>
+</form>{{end}}
