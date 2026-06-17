@@ -30,6 +30,7 @@ type Server struct {
 	throttle     *auth.Throttle
 	now          func() time.Time
 	secureCookie bool
+	mailSender   mailSender // 可注入(测试用);nil 时由配置构建
 }
 
 func NewServer(st *store.Store, secret []byte, secureCookie bool) *Server {
@@ -71,6 +72,8 @@ func (s *Server) Routes() http.Handler {
 
 	mux.HandleFunc("GET /login", s.getLogin)
 	mux.HandleFunc("POST /login", s.postLogin)
+	mux.HandleFunc("GET /forgot", s.getForgot)
+	mux.HandleFunc("POST /forgot", s.postForgot)
 	mux.HandleFunc("GET /logout", s.postLogout)
 
 	authed := http.NewServeMux()

@@ -28,7 +28,7 @@ type ViewData struct {
 var pages map[string]*template.Template
 
 var pageNames = []string{
-	"login.html", "dashboard.html", "buy.html", "orders.html", "order.html",
+	"login.html", "forgot.html", "dashboard.html", "buy.html", "orders.html", "order.html",
 	"admin_users.html", "admin_create.html", "admin_balance.html", "admin_config.html",
 }
 
@@ -42,6 +42,9 @@ func initTemplates() {
 }
 
 func (s *Server) render(w http.ResponseWriter, r *http.Request, page string, data ViewData) {
+	if pages == nil {
+		initTemplates()
+	}
 	if data.Data == nil {
 		data.Data = map[string]any{}
 	}
