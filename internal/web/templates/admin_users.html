@@ -1,7 +1,6 @@
 {{define "content"}}
 <h2>用户管理</h2>
-{{if .Data.resetPassword}}<p>已重置 <b>{{.Data.resetEmail}}</b> 的密码:<code>{{.Data.resetPassword}}</code>{{if .Data.mailErr}}<br><span class="err">邮件发送失败:{{.Data.mailErr}}(请手动转交)</span>{{end}}</p>{{end}}
-<a href="/admin/create"><button>一键建账户</button></a>
+<a href="/admin/create"><button>建账户</button></a>
 <table><tr><th>ID</th><th>邮箱</th><th>角色</th><th>余额</th><th>状态</th><th>操作</th></tr>
 {{range .Data.users}}<tr><td>{{.ID}}</td><td>{{.Email}}</td><td>{{.Role}}</td><td>{{usd .Balance}}</td><td>{{if eq .Status 1}}启用{{else}}禁用{{end}}</td>
 <td>
