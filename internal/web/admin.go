@@ -76,6 +76,25 @@ func (s *Server) postConfig(w http.ResponseWriter, r *http.Request) {
 		set("smtp_pass", v)
 	}
 	set("smtp_from", r.PostFormValue("smtp_from"))
+	set("epay_qrcode_alipay", r.PostFormValue("epay_qrcode_alipay"))
+	set("epay_qrcode_alipay_name", r.PostFormValue("epay_qrcode_alipay_name"))
+	set("epay_qrcode_wxpay", r.PostFormValue("epay_qrcode_wxpay"))
+	set("epay_qrcode_wxpay_name", r.PostFormValue("epay_qrcode_wxpay_name"))
+	set("epay_sms_secret", r.PostFormValue("epay_sms_secret"))
+	set("epay_order_timeout", r.PostFormValue("epay_order_timeout"))
+	set("epay_admin_user", r.PostFormValue("epay_admin_user"))
+	if v := r.PostFormValue("epay_admin_pass"); v != "" {
+		hash, _ := auth.HashPassword(v)
+		set("epay_admin_pass_hash", hash)
+	}
+	set("epay_merchants", linesToMerchants(r.PostFormValue("epay_merchants")))
+	rate := strings.TrimSpace(r.PostFormValue("recharge_rate"))
+	if rate == "" {
+		rate = "500000"
+	}
+	set("recharge_rate", rate)
+	set("recharge_notify_base", r.PostFormValue("recharge_notify_base"))
+	set("recharge_internal_pid", r.PostFormValue("recharge_internal_pid"))
 	s.render(w, r, "admin_config.html", ViewData{Title: "配置", Data: map[string]any{"cfg": s.mustConfig(), "msg": "已保存"}})
 }
 

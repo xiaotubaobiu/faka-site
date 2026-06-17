@@ -23,6 +23,18 @@ type siteConfig struct {
 	SMTPUser    string
 	SMTPPass    string
 	SMTPFrom    string
+
+	EpayMerchants      string // 编辑用:"pid,key" 每行一个
+	EpayQRAlipay       string
+	EpayQRAlipayName   string
+	EpayQRWxpay        string
+	EpayQRWxpayName    string
+	EpaySMSSecret      string
+	EpayOrderTimeout   string
+	EpayAdminUser      string
+	RechargeRate       string // 每 ¥ 对应 quota,默认 500000
+	RechargeNotifyBase string // 充值回调基地址,如 https://faka.example.com
+	RechargeInternalPID string // 自身充值用的商户 pid
 }
 
 type Server struct {
@@ -44,10 +56,25 @@ func (s *Server) config() (siteConfig, error) {
 	if err != nil {
 		return siteConfig{}, err
 	}
-	return siteConfig{
+	c := siteConfig{
 		BaseURL: m["newapi_base_url"], AccessToken: m["newapi_access_token"], AdminUserID: m["newapi_admin_user_id"],
 		SMTPHost: m["smtp_host"], SMTPPort: m["smtp_port"], SMTPUser: m["smtp_user"], SMTPPass: m["smtp_pass"], SMTPFrom: m["smtp_from"],
-	}, nil
+		EpayMerchants:     merchantsToLines(m["epay_merchants"]),
+		EpayQRAlipay:      m["epay_qrcode_alipay"],
+		EpayQRAlipayName:  m["epay_qrcode_alipay_name"],
+		EpayQRWxpay:       m["epay_qrcode_wxpay"],
+		EpayQRWxpayName:   m["epay_qrcode_wxpay_name"],
+		EpaySMSSecret:     m["epay_sms_secret"],
+		EpayOrderTimeout:  m["epay_order_timeout"],
+		EpayAdminUser:     m["epay_admin_user"],
+		RechargeRate:      m["recharge_rate"],
+		RechargeNotifyBase: m["recharge_notify_base"],
+		RechargeInternalPID: m["recharge_internal_pid"],
+	}
+	if c.RechargeRate == "" {
+		c.RechargeRate = "500000"
+	}
+	return c, nil
 }
 
 func (s *Server) mustConfig() siteConfig { c, _ := s.config(); return c }

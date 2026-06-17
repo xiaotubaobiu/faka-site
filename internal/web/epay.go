@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"strconv"
+	"strings"
 
 	"faka-site/internal/epay"
 )
@@ -47,4 +48,62 @@ func (s *Server) epayConfig() epay.Config {
 
 	cfg.Normalize()
 	return cfg
+}
+
+// merchantsToLines converts the stored epay_merchants JSON array
+// ([{"pid":N,"key":"K"}]) into newline-separated "pid,key" lines for
+// editing. Empty/invalid JSON yields an empty string.
+func merchantsToLines(jsonStr string) string {
+	if jsonStr == "" {
+		return ""
+	}
+	var ms []struct {
+		PID int    `json:"pid"`
+		Key string `json:"key"`
+	}
+	if err := json.Unmarshal([]byte(jsonStr), &ms); err != nil {
+		return ""
+	}
+	var b strings.Builder
+	for _, m := range ms {
+		b.WriteString(strconv.Itoa(m.PID))
+		b.WriteByte(',')
+		b.WriteString(m.Key)
+		b.WriteByte('\n')
+	}
+	return strings.TrimRight(b.String(), "\n")
+}
+
+// linesToMerchants converts newline-separated "pid,key" lines back into the
+// stored epay_merchants JSON array string. Blank/malformed lines are skipped.
+// Returns "" (empty, not "[]") when no valid merchants are present.
+func linesToMerchants(lines string) string {
+	var ms []struct {
+		PID int    `json:"pid"`
+		Key string `json:"key"`
+	}
+	for _, line := range strings.Split(lines, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		parts := strings.SplitN(line, ",", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		pid, err := strconv.Atoi(strings.TrimSpace(parts[0]))
+		if err != nil {
+			continue
+		}
+		key := strings.TrimSpace(parts[1])
+		ms = append(ms, struct {
+			PID int    `json:"pid"`
+			Key string `json:"key"`
+		}{PID: pid, Key: key})
+	}
+	if len(ms) == 0 {
+		return ""
+	}
+	out, _ := json.Marshal(ms)
+	return string(out)
 }
