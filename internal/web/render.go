@@ -21,6 +21,7 @@ type ViewData struct {
 	Title string
 	User  *ViewUser
 	CSRF  string
+	Nonce string
 	Data  map[string]any
 }
 
@@ -50,6 +51,7 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, page string, dat
 		}
 		data.CSRF = sess.CSRF
 	}
+	data.Nonce = nonceFromContext(r)
 	if data.Title == "" {
 		data.Title = "发卡站"
 	}

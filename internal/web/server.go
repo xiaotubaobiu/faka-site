@@ -95,5 +95,5 @@ func (s *Server) Routes() http.Handler {
 
 	mux.Handle("/", s.loadSession(s.csrfCheck(s.requireLogin(authed))))
 	mux.Handle("/admin/", s.loadSession(s.csrfCheck(s.requireAdmin(http.StripPrefix("/admin", adminMux)))))
-	return mux
+	return s.securityHeaders(mux)
 }
