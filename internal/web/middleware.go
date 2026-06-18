@@ -57,7 +57,10 @@ func (s *Server) csrfCheck(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r) // pre-auth POST (login) not routed here anyway
 			return
 		}
-		if err := r.ParseForm(); err != nil || r.PostFormValue("csrf") != sess.CSRF {
+		// PostFormValue handles both urlencoded and multipart bodies correctly
+		// (it calls ParseMultipartForm when needed). We must NOT call ParseForm
+		// first, since that consumes the urlencoded body and breaks multipart.
+		if r.PostFormValue("csrf") != sess.CSRF {
 			http.Error(w, "csrf check failed", http.StatusForbidden)
 			return
 		}

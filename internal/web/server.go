@@ -24,22 +24,17 @@ type siteConfig struct {
 	SMTPPass    string
 	SMTPFrom    string
 
-	// 支付宝官方(当面付)
-	AlipayAppID      string
-	AlipayPrivateKey string // 显示用:已配置则占位,不入库明文
-	AlipayPublicKey  string
-	AlipayGateway    string
-	AlipaySandbox    string
+	// 支付宝官方(当面付)— 仅存非敏感标识,密钥走文件
+	AlipayAppID   string
+	AlipayGateway string
+	AlipaySandbox string
 
-	// 微信支付官方(v3 Native)
+	// 微信支付官方(v3 Native)— 仅存非敏感标识,密钥走文件
 	WxpayAppID       string
 	WxpayMchID       string
 	WxpayMchSerialNo string
-	WxpayAPIv3Key    string // 显示用:已配置则占位
-	WxpayPrivateKey  string // 显示用:已配置则占位
 
 	// epay 对外网关
-	EpayMerchants    string // 编辑用:"pid,key" 每行一个
 	EpayOrderTimeout string
 	EpayAdminUser    string
 
@@ -72,19 +67,14 @@ func (s *Server) config() (siteConfig, error) {
 		BaseURL: m["newapi_base_url"], AccessToken: m["newapi_access_token"], AdminUserID: m["newapi_admin_user_id"],
 		SMTPHost: m["smtp_host"], SMTPPort: m["smtp_port"], SMTPUser: m["smtp_user"], SMTPPass: m["smtp_pass"], SMTPFrom: m["smtp_from"],
 
-		AlipayAppID:      m["alipay_appid"],
-		AlipayPrivateKey: decryptOrPassthrough(m["alipay_private_key"]),
-		AlipayPublicKey:  decryptOrPassthrough(m["alipay_public_key"]),
-		AlipayGateway:    m["alipay_gateway"],
-		AlipaySandbox:    m["alipay_sandbox"],
+		AlipayAppID:   m["alipay_appid"],
+		AlipayGateway: m["alipay_gateway"],
+		AlipaySandbox: m["alipay_sandbox"],
 
 		WxpayAppID:       m["wxpay_appid"],
 		WxpayMchID:       m["wxpay_mchid"],
 		WxpayMchSerialNo: m["wxpay_serial_no"],
-		WxpayAPIv3Key:    decryptOrPassthrough(m["wxpay_apiv3_key"]),
-		WxpayPrivateKey:  decryptOrPassthrough(m["wxpay_private_key"]),
 
-		EpayMerchants:    merchantsToLines(m["epay_merchants"]),
 		EpayOrderTimeout: m["epay_order_timeout"],
 		EpayAdminUser:    m["epay_admin_user"],
 
@@ -147,6 +137,13 @@ func (s *Server) Routes() http.Handler {
 	adminMux.HandleFunc("GET /config", s.getConfig)
 	adminMux.HandleFunc("POST /config", s.postConfig)
 	adminMux.HandleFunc("POST /config/test", s.postConfigTest)
+	adminMux.HandleFunc("POST /config/key-upload", s.postKeyUpload)
+	adminMux.HandleFunc("POST /config/key-delete", s.postKeyDelete)
+	adminMux.HandleFunc("GET /merchants", s.getMerchants)
+	adminMux.HandleFunc("POST /merchants/add", s.postMerchantAdd)
+	adminMux.HandleFunc("POST /merchants/delete", s.postMerchantDelete)
+	adminMux.HandleFunc("POST /merchants/reset-key", s.postMerchantResetKey)
+	adminMux.HandleFunc("GET /docs", s.getAdminDocs)
 	adminMux.HandleFunc("POST /users/{id}/status", s.postUserStatus)
 	adminMux.HandleFunc("GET /reset", s.getReset)
 	adminMux.HandleFunc("POST /reset", s.postReset)

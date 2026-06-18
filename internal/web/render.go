@@ -35,6 +35,7 @@ var pageNames = []string{
 	"login.html", "forgot.html", "dashboard.html", "buy.html", "orders.html", "order.html",
 	"recharge.html", "recharge_pay.html",
 	"admin_users.html", "admin_create.html", "admin_reset.html", "admin_balance.html", "admin_config.html",
+	"admin_merchants.html", "admin_docs.html",
 }
 
 // pagePartials:某页面需要额外引入的共享块文件(与 layout 一起 parse)。

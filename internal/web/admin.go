@@ -59,26 +59,15 @@ func (s *Server) postBalance(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) getConfig(w http.ResponseWriter, r *http.Request) {
 	cfg, _ := s.config()
-	s.render(w, r, "admin_config.html", ViewData{Title: "配置", Data: map[string]any{"cfg": cfg}})
+	s.render(w, r, "admin_config.html", ViewData{Title: "配置", Data: map[string]any{
+		"cfg":  cfg,
+		"keys": payment.KeyFileStatuses(),
+	}})
 }
 
 func (s *Server) postConfig(w http.ResponseWriter, r *http.Request) {
 	ctx := context.Background()
 	set := func(k, v string) { s.store.SetConfig(ctx, k, v) }
-	// setEncrypted encrypts a sensitive value; empty input is skipped (so the
-	// admin can save the rest of the form without overwriting an existing key).
-	setEncrypted := func(k, v string) {
-		if v == "" {
-			return
-		}
-		ct, err := payment.Seal(v)
-		if err != nil {
-			log.Printf("config: encrypt %s failed: %v (storing plaintext)", k, err)
-			set(k, v)
-			return
-		}
-		set(k, ct)
-	}
 
 	set("newapi_base_url", r.PostFormValue("newapi_base_url"))
 	if v := r.PostFormValue("newapi_access_token"); v != "" {
@@ -95,17 +84,13 @@ func (s *Server) postConfig(w http.ResponseWriter, r *http.Request) {
 
 	// 支付宝官方
 	set("alipay_appid", r.PostFormValue("alipay_appid"))
-	setEncrypted("alipay_private_key", r.PostFormValue("alipay_private_key"))
-	setEncrypted("alipay_public_key", r.PostFormValue("alipay_public_key"))
 	set("alipay_gateway", r.PostFormValue("alipay_gateway"))
 	set("alipay_sandbox", r.PostFormValue("alipay_sandbox"))
 
-	// 微信支付官方
+	// 微信支付官方(密钥走文件上传,不在此保存)
 	set("wxpay_appid", r.PostFormValue("wxpay_appid"))
 	set("wxpay_mchid", r.PostFormValue("wxpay_mchid"))
 	set("wxpay_serial_no", r.PostFormValue("wxpay_serial_no"))
-	setEncrypted("wxpay_apiv3_key", r.PostFormValue("wxpay_apiv3_key"))
-	setEncrypted("wxpay_private_key", r.PostFormValue("wxpay_private_key"))
 
 	// epay 对外网关
 	set("epay_order_timeout", r.PostFormValue("epay_order_timeout"))
@@ -114,7 +99,6 @@ func (s *Server) postConfig(w http.ResponseWriter, r *http.Request) {
 		hash, _ := auth.HashPassword(v)
 		set("epay_admin_pass_hash", hash)
 	}
-	set("epay_merchants", linesToMerchants(r.PostFormValue("epay_merchants")))
 
 	// 充值设置
 	rate := strings.TrimSpace(r.PostFormValue("recharge_rate"))
@@ -124,7 +108,11 @@ func (s *Server) postConfig(w http.ResponseWriter, r *http.Request) {
 	set("recharge_rate", rate)
 	set("recharge_notify_base", strings.TrimRight(r.PostFormValue("recharge_notify_base"), "/"))
 	set("recharge_internal_pid", r.PostFormValue("recharge_internal_pid"))
-	s.render(w, r, "admin_config.html", ViewData{Title: "配置", Data: map[string]any{"cfg": s.mustConfig(), "msg": "已保存"}})
+	s.render(w, r, "admin_config.html", ViewData{Title: "配置", Data: map[string]any{
+		"cfg":  s.mustConfig(),
+		"keys": payment.KeyFileStatuses(),
+		"msg":  "已保存",
+	}})
 }
 
 func (s *Server) postConfigTest(w http.ResponseWriter, r *http.Request) {

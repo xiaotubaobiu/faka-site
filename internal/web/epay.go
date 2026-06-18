@@ -54,13 +54,21 @@ func (s *Server) epayConfig() epay.Config {
 	return cfg
 }
 
-// rebuildPaymentRegistry constructs alipay/wxpay providers from the (decrypted)
-// config map and installs them into the process-wide registry.
+// rebuildPaymentRegistry constructs alipay/wxpay providers from the config map
+// (non-sensitive fields) plus key FILES (sensitive PEMs/APIv3 key) and installs
+// them into the process-wide registry.
+//
+// Sensitive material (private keys, APIv3 key) is read from files in the key
+// directory rather than the database, so it never appears in config tables or
+// admin textareas. Non-sensitive IDs (app id, mch id, serial no) stay in the
+// KV store since they're just public identifiers.
 func (s *Server) rebuildPaymentRegistry(m map[string]string) {
+	alipayPriv, _ := payment.ReadKeyFile("alipay_private.pem")
+	alipayPub, _ := payment.ReadKeyFile("alipay_public.pem")
 	alipayCfg := payment.AlipayConfig{
 		AppID:      m["alipay_appid"],
-		PrivateKey: decryptOrPassthrough(m["alipay_private_key"]),
-		PublicKey:  decryptOrPassthrough(m["alipay_public_key"]),
+		PrivateKey: alipayPriv,
+		PublicKey:  alipayPub,
 		Gateway:    m["alipay_gateway"],
 		SignType:   "RSA2",
 	}
@@ -68,12 +76,14 @@ func (s *Server) rebuildPaymentRegistry(m map[string]string) {
 		alipayCfg.Gateway = "https://openapi-sandbox.dl.alipaydev.com/gateway.do"
 	}
 
+	wxpayPriv, _ := payment.ReadKeyFile("wxpay_private.pem")
+	wxpayAPIv3, _ := payment.ReadKeyFile("wxpay_apiv3.key")
 	wxpayCfg := payment.WxpayConfig{
 		AppID:       m["wxpay_appid"],
 		MchID:       m["wxpay_mchid"],
 		MchSerialNo: m["wxpay_serial_no"],
-		APIv3Key:    decryptOrPassthrough(m["wxpay_apiv3_key"]),
-		PrivateKey:  decryptOrPassthrough(m["wxpay_private_key"]),
+		APIv3Key:    wxpayAPIv3,
+		PrivateKey:  wxpayPriv,
 	}
 
 	payment.DefaultRegistry().SetProviders(
@@ -82,17 +92,15 @@ func (s *Server) rebuildPaymentRegistry(m map[string]string) {
 	)
 }
 
-// decryptOrPassthrough decrypts an encrypted config value, or returns it
-// unchanged if it's legacy plaintext. Empty input yields empty output.
+// decryptOrPassthrough is retained for reading legacy encrypted config values
+// during migration, but is no longer used for payment keys (those come from
+// files now).
 func decryptOrPassthrough(stored string) string {
 	if stored == "" {
 		return ""
 	}
 	plain, err := payment.Open(stored)
 	if err != nil {
-		// Decryption failed (e.g. PAY_SECRET unset for a value that was never
-		// encrypted). Surface the raw value so an unconfigured secret doesn't
-		// break the whole config read.
 		return stored
 	}
 	return plain
