@@ -1,0 +1,13 @@
+# 不要把密钥、数据库、本地配置打进镜像
+keys/
+data/
+data.db
+data.db-*
+*.db
+*.db-*
+.env
+.env.*
+node_modules/
+faka-site
+/tmp/
+.git/

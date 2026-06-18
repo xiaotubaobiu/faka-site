@@ -1,0 +1,21 @@
+services:
+  faka:
+    build: .
+    image: faka-site:latest
+    container_name: faka-site
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8090:8080"   # 只监听本地,由 Caddy 反代到公网
+    environment:
+      FAKA_LISTEN: ":8080"
+      FAKA_DB: "/app/data/data.db"
+      COOKIE_SECURE: "true"
+      # 以下敏感值通过 .env 文件注入,不入库不入镜像
+      SESSION_SECRET: ${SESSION_SECRET}
+      PAY_SECRET: ${PAY_SECRET}
+      KEYS_DIR: "/app/keys"
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+    volumes:
+      - ./data:/app/data      # 数据库持久化
+      - ./keys:/app/keys      # 支付密钥文件持久化
