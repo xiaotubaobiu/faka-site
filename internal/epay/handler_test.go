@@ -1,22 +1,36 @@
 package epay
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
 
+	"faka-site/internal/payment"
 	"faka-site/internal/store"
 )
 
+// fakeProvider is a test payment provider that returns a fixed QR code without
+// calling any real payment API.
+type fakeProvider struct {
+	qr string
+}
+
+func (f fakeProvider) Name() string             { return "alipay" }
+func (f fakeProvider) Configured() bool         { return true }
+func (f fakeProvider) NotifyOKResponse() string { return "success" }
+func (f fakeProvider) CreatePayment(_ context.Context, _ payment.PaymentRequest) (payment.PaymentResult, error) {
+	return payment.PaymentResult{QRCode: f.qr}, nil
+}
+func (f fakeProvider) ParseNotify(*http.Request) (payment.NotifyInfo, error) {
+	return payment.NotifyInfo{}, nil
+}
+
 func testConfig() Config {
 	return Config{
-		QRCodes: map[string]QRCode{
-			"alipay": {URL: "https://qr.alipay.com/test", Name: "支付宝"},
-			"wxpay":  {URL: "", Name: "微信支付"},
-		},
-		SMSSecret:    "",
+		NotifyBase:   "https://gateway.example",
 		OrderTimeout: 5,
 		Merchants:    []Merchant{{PID: 1001, Key: "testkey123"}},
 	}
@@ -32,6 +46,9 @@ func newTestHandler(t *testing.T) (*Handler, *store.Store) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { s.Close() })
+	// Install a fake official provider so no real API is called.
+	payment.DefaultRegistry().SetProviders(fakeProvider{qr: "https://qr.alipay.com/test"})
+	t.Cleanup(func() { payment.DefaultRegistry().SetProviders() })
 	return New(s, testConfig), s
 }
 
@@ -67,7 +84,7 @@ func TestHandler_Mapi_SignedCreate(t *testing.T) {
 		t.Fatalf("expected trade_no in response, got %s", body)
 	}
 	if !strings.Contains(body, `"qrcode":"https://qr.alipay.com/test"`) {
-		t.Fatalf("expected qrcode in response, got %s", body)
+		t.Fatalf("expected real qrcode in response, got %s", body)
 	}
 
 	// order persisted and retrievable by out_trade_no
@@ -99,5 +116,36 @@ func TestHandler_Mapi_BadSign(t *testing.T) {
 
 	if rec.Code != http.StatusForbidden {
 		t.Fatalf("expected 403 on bad sign, got %d body=%s", rec.Code, rec.Body.String())
+	}
+}
+
+// TestHandler_Mapi_UnconfiguredChannel verifies that when no provider is
+// registered for the requested channel, a clear error is returned instead of
+// an empty QR code.
+func TestHandler_Mapi_UnconfiguredChannel(t *testing.T) {
+	h, _ := newTestHandler(t)
+	// Remove the fake provider so "alipay" is unconfigured.
+	payment.DefaultRegistry().SetProviders()
+
+	params := url.Values{}
+	params.Set("pid", "1001")
+	params.Set("out_trade_no", "OUT-NOCHAN")
+	params.Set("notify_url", "https://merchant.example/notify")
+	params.Set("name", "x")
+	params.Set("money", "1.00")
+	params.Set("type", "alipay")
+	params.Set("sign", Sign(params, "testkey123"))
+
+	req := httptest.NewRequest(http.MethodPost, "/mapi.php", strings.NewReader(params.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	rec := httptest.NewRecorder()
+
+	h.Mapi(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 for unconfigured channel, got %d body=%s", rec.Code, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), "未配置") {
+		t.Fatalf("expected '未配置' error message, got %s", rec.Body.String())
 	}
 }

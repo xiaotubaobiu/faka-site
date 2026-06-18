@@ -7,29 +7,27 @@ import (
 	"strings"
 
 	"faka-site/internal/epay"
+	"faka-site/internal/payment"
 )
 
 // epayConfig builds an epay.Config from the faka-site config KV store.
 // It is called on each request (passed as a provider to epay.New) so admin
 // edits take effect without restart. Missing/empty keys fall back to defaults.
+//
+// Payment channel credentials are decrypted here and used to (re)build the
+// payment.Registry whenever the config is read for the first time in a process;
+// the registry itself is then consulted fresh on each request by handlers.
 func (s *Server) epayConfig() epay.Config {
 	m, _ := s.store.AllConfig(context.Background())
 
 	cfg := epay.Config{
-		QRCodes:      map[string]epay.QRCode{},
-		SMSSecret:    m["epay_sms_secret"],
-		OrderTimeout: 0, // normalize fills default 5
+		NotifyBase:   m["recharge_notify_base"], // official callbacks share this base
+		OrderTimeout: 0,                         // normalize fills default 5
 		Admin: epay.Admin{
 			Username:     m["epay_admin_user"],
 			PasswordHash: m["epay_admin_pass_hash"],
 		},
 	}
-
-	// QR codes — name optional, defaults applied by normalize.
-	wx := epay.QRCode{URL: m["epay_qrcode_wxpay"], Name: m["epay_qrcode_wxpay_name"]}
-	ali := epay.QRCode{URL: m["epay_qrcode_alipay"], Name: m["epay_qrcode_alipay_name"]}
-	cfg.QRCodes["wxpay"] = wx
-	cfg.QRCodes["alipay"] = ali
 
 	// Merchants: JSON array [{"pid":1001,"key":"..."}]. Tolerate empty/missing.
 	if raw := m["epay_merchants"]; raw != "" {
@@ -47,7 +45,57 @@ func (s *Server) epayConfig() epay.Config {
 	}
 
 	cfg.Normalize()
+
+	// Rebuild the payment registry from current credentials. This is cheap
+	// (parsing a couple of PEM keys) and keeps handlers in sync with admin
+	// edits without a restart.
+	s.rebuildPaymentRegistry(m)
+
 	return cfg
+}
+
+// rebuildPaymentRegistry constructs alipay/wxpay providers from the (decrypted)
+// config map and installs them into the process-wide registry.
+func (s *Server) rebuildPaymentRegistry(m map[string]string) {
+	alipayCfg := payment.AlipayConfig{
+		AppID:      m["alipay_appid"],
+		PrivateKey: decryptOrPassthrough(m["alipay_private_key"]),
+		PublicKey:  decryptOrPassthrough(m["alipay_public_key"]),
+		Gateway:    m["alipay_gateway"],
+		SignType:   "RSA2",
+	}
+	if sandbox := m["alipay_sandbox"]; sandbox == "1" || sandbox == "true" {
+		alipayCfg.Gateway = "https://openapi-sandbox.dl.alipaydev.com/gateway.do"
+	}
+
+	wxpayCfg := payment.WxpayConfig{
+		AppID:       m["wxpay_appid"],
+		MchID:       m["wxpay_mchid"],
+		MchSerialNo: m["wxpay_serial_no"],
+		APIv3Key:    decryptOrPassthrough(m["wxpay_apiv3_key"]),
+		PrivateKey:  decryptOrPassthrough(m["wxpay_private_key"]),
+	}
+
+	payment.DefaultRegistry().SetProviders(
+		payment.NewAlipayProvider(alipayCfg),
+		payment.NewWxpayProvider(wxpayCfg),
+	)
+}
+
+// decryptOrPassthrough decrypts an encrypted config value, or returns it
+// unchanged if it's legacy plaintext. Empty input yields empty output.
+func decryptOrPassthrough(stored string) string {
+	if stored == "" {
+		return ""
+	}
+	plain, err := payment.Open(stored)
+	if err != nil {
+		// Decryption failed (e.g. PAY_SECRET unset for a value that was never
+		// encrypted). Surface the raw value so an unconfigured secret doesn't
+		// break the whole config read.
+		return stored
+	}
+	return plain
 }
 
 // merchantsToLines converts the stored epay_merchants JSON array

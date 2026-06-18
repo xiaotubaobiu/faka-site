@@ -16,17 +16,24 @@
       <h2 class="text-lg font-semibold">请用{{.Data.method}}扫码支付</h2>
       <div class="text-3xl font-bold text-error">¥{{fen2yuan $o.AmountFen}}</div>
 
-      {{if .Data.qr}}
+      {{if .Data.payErr}}
+      <div class="alert alert-error w-full justify-start text-sm">
+        <span>{{.Data.payErr}}</span>
+      </div>
+      <a href="/recharge" class="btn btn-ghost btn-block">返回重试</a>
+      {{else if .Data.qr}}
       <img src="{{qrDataURL .Data.qr}}" class="w-64 h-64 rounded-xl border border-base-300" alt="收款码">
-      {{else}}
-      <div class="w-64 h-64 rounded-xl border border-dashed border-base-300 grid place-items-center text-base-content/40 text-sm">未配置收款码</div>
-      {{end}}
-
       <p class="text-sm text-base-content/60">支付完成后请等待几秒,页面将自动到账</p>
       <p class="text-xs text-base-content/40">订单号 {{$o.OutTradeNo}} · 到账 {{usd $o.Quota}}</p>
 
       <!-- HTMX auto-poll: re-render this page every 5s; flips to success once paid. -->
       <div hx-get="/recharge/pay/{{$o.ID}}" hx-trigger="every 5s" hx-target="this"></div>
+      {{else}}
+      <div class="w-64 h-64 rounded-xl border border-dashed border-base-300 grid place-items-center text-base-content/40 text-sm">
+        <span>正在生成二维码…</span>
+      </div>
+      <div hx-get="/recharge/pay/{{$o.ID}}" hx-trigger="every 5s" hx-target="this"></div>
+      {{end}}
       {{end}}
     </div>
   </div>

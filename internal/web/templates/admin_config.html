@@ -5,38 +5,61 @@
 {{if .Data.testOK}}<div class="alert alert-success mb-3"><span>连接正常,且为管理员 ✓</span></div>{{end}}
 <form method="post" action="/admin/config" class="card bg-base-100 shadow border border-base-200 p-4 grid gap-3">
   <input name="csrf" type="hidden" value="{{.CSRF}}">
+
   <fieldset class="border border-base-200 rounded p-3 grid gap-2">
     <legend class="text-sm opacity-70 px-1">NewAPI</legend>
     <label class="form-control"><span class="label-text">网址</span><input name="newapi_base_url" value="{{.Data.cfg.BaseURL}}" class="input input-bordered input-sm"></label>
     <label class="form-control"><span class="label-text">系统访问令牌</span><input name="newapi_access_token" placeholder="留空=不修改" class="input input-bordered input-sm"></label>
     <label class="form-control"><span class="label-text">管理员用户ID</span><input name="newapi_admin_user_id" value="{{.Data.cfg.AdminUserID}}" class="input input-bordered input-sm"></label>
   </fieldset>
+
   <fieldset class="border border-base-200 rounded p-3 grid gap-2">
-    <legend class="text-sm opacity-70 px-1">SMTP</legend>
+    <legend class="text-sm opacity-70 px-1">SMTP 邮件</legend>
     <label class="form-control"><span class="label-text">主机</span><input name="smtp_host" value="{{.Data.cfg.SMTPHost}}" class="input input-bordered input-sm"></label>
     <label class="form-control"><span class="label-text">端口</span><input name="smtp_port" value="{{.Data.cfg.SMTPPort}}" class="input input-bordered input-sm"></label>
     <label class="form-control"><span class="label-text">用户</span><input name="smtp_user" value="{{.Data.cfg.SMTPUser}}" class="input input-bordered input-sm"></label>
     <label class="form-control"><span class="label-text">密码</span><input name="smtp_pass" type="password" placeholder="留空=不修改" class="input input-bordered input-sm"></label>
     <label class="form-control"><span class="label-text">发件人</span><input name="smtp_from" value="{{.Data.cfg.SMTPFrom}}" class="input input-bordered input-sm"></label>
   </fieldset>
+
   <fieldset class="border border-base-200 rounded p-3 grid gap-2">
-    <legend class="text-sm opacity-70 px-1">易支付(epay 网关)</legend>
+    <legend class="text-sm opacity-70 px-1">支付宝官方(当面付扫码)</legend>
+    <label class="form-control"><span class="label-text">应用 AppID</span><input name="alipay_appid" value="{{.Data.cfg.AlipayAppID}}" class="input input-bordered input-sm"></label>
+    <label class="form-control"><span class="label-text">应用私钥(PEM){{if .Data.cfg.AlipayPrivateKey}} · 已配置,留空不改{{end}}</span><textarea name="alipay_private_key" class="textarea textarea-bordered textarea-sm h-20 font-mono" placeholder="-----BEGIN RSA PRIVATE KEY-----&#10;...&#10;-----END RSA PRIVATE KEY-----">{{if not .Data.cfg.AlipayPrivateKey}}{{end}}</textarea></label>
+    <label class="form-control"><span class="label-text">支付宝公钥(PEM){{if .Data.cfg.AlipayPublicKey}} · 已配置,留空不改{{end}}</span><textarea name="alipay_public_key" class="textarea textarea-bordered textarea-sm h-20 font-mono" placeholder="-----BEGIN PUBLIC KEY-----&#10;...&#10;-----END PUBLIC KEY-----">{{if not .Data.cfg.AlipayPublicKey}}{{end}}</textarea></label>
+    <label class="form-control"><span class="label-text">网关(留空=默认线上)</span><input name="alipay_gateway" value="{{.Data.cfg.AlipayGateway}}" placeholder="https://openapi.alipay.com/gateway.do" class="input input-bordered input-sm"></label>
+    <label class="form-control"><span class="label-text">沙箱</span>
+      <select name="alipay_sandbox" class="select select-bordered select-sm">
+        <option value="0" {{if not .Data.cfg.AlipaySandbox}}selected{{end}}>否(线上)</option>
+        <option value="1" {{if .Data.cfg.AlipaySandbox}}selected{{end}}>是(沙箱)</option>
+      </select>
+    </label>
+  </fieldset>
+
+  <fieldset class="border border-base-200 rounded p-3 grid gap-2">
+    <legend class="text-sm opacity-70 px-1">微信支付官方(v3 Native 扫码)</legend>
+    <label class="form-control"><span class="label-text">AppID(公众号/应用)</span><input name="wxpay_appid" value="{{.Data.cfg.WxpayAppID}}" class="input input-bordered input-sm"></label>
+    <label class="form-control"><span class="label-text">商户号 MchID</span><input name="wxpay_mchid" value="{{.Data.cfg.WxpayMchID}}" class="input input-bordered input-sm"></label>
+    <label class="form-control"><span class="label-text">商户证书序列号</span><input name="wxpay_serial_no" value="{{.Data.cfg.WxpayMchSerialNo}}" class="input input-bordered input-sm"></label>
+    <label class="form-control"><span class="label-text">APIv3 密钥(32位){{if .Data.cfg.WxpayAPIv3Key}} · 已配置,留空不改{{end}}</span><input name="wxpay_apiv3_key" type="password" placeholder="留空=不修改" class="input input-bordered input-sm"></label>
+    <label class="form-control"><span class="label-text">商户私钥(PEM,RSA2048){{if .Data.cfg.WxpayPrivateKey}} · 已配置,留空不改{{end}}</span><textarea name="wxpay_private_key" class="textarea textarea-bordered textarea-sm h-20 font-mono" placeholder="-----BEGIN PRIVATE KEY-----&#10;...&#10;-----END PRIVATE KEY-----">{{if not .Data.cfg.WxpayPrivateKey}}{{end}}</textarea></label>
+  </fieldset>
+
+  <fieldset class="border border-base-200 rounded p-3 grid gap-2">
+    <legend class="text-sm opacity-70 px-1">epay 对外网关(给下游商户对接)</legend>
     <label class="form-control"><span class="label-text">商户(pid,key 每行一个)</span><textarea name="epay_merchants" class="textarea textarea-bordered textarea-sm h-24 font-mono" placeholder="1001,你的商户key">{{.Data.cfg.EpayMerchants}}</textarea></label>
-    <label class="form-control"><span class="label-text">支付宝收款码 URL</span><input name="epay_qrcode_alipay" value="{{.Data.cfg.EpayQRAlipay}}" class="input input-bordered input-sm"></label>
-    <label class="form-control"><span class="label-text">支付宝名称</span><input name="epay_qrcode_alipay_name" value="{{.Data.cfg.EpayQRAlipayName}}" class="input input-bordered input-sm"></label>
-    <label class="form-control"><span class="label-text">微信收款码 URL</span><input name="epay_qrcode_wxpay" value="{{.Data.cfg.EpayQRWxpay}}" class="input input-bordered input-sm"></label>
-    <label class="form-control"><span class="label-text">微信名称</span><input name="epay_qrcode_wxpay_name" value="{{.Data.cfg.EpayQRWxpayName}}" class="input input-bordered input-sm"></label>
-    <label class="form-control"><span class="label-text">SMS 转发密钥</span><input name="epay_sms_secret" value="{{.Data.cfg.EpaySMSSecret}}" class="input input-bordered input-sm"></label>
     <label class="form-control"><span class="label-text">订单超时(分钟)</span><input name="epay_order_timeout" value="{{.Data.cfg.EpayOrderTimeout}}" class="input input-bordered input-sm"></label>
     <label class="form-control"><span class="label-text">epay 管理用户名</span><input name="epay_admin_user" value="{{.Data.cfg.EpayAdminUser}}" class="input input-bordered input-sm"></label>
     <label class="form-control"><span class="label-text">epay 管理密码(留空不改)</span><input name="epay_admin_pass" type="password" placeholder="留空=不修改" class="input input-bordered input-sm"></label>
   </fieldset>
+
   <fieldset class="border border-base-200 rounded p-3 grid gap-2">
-    <legend class="text-sm opacity-70 px-1">充值(recharge)</legend>
+    <legend class="text-sm opacity-70 px-1">充值设置</legend>
+    <label class="form-control"><span class="label-text">公网回调基地址(官方支付异步通知,必须 https)</span><input name="recharge_notify_base" value="{{.Data.cfg.RechargeNotifyBase}}" placeholder="https://faka.example.com" class="input input-bordered input-sm"></label>
     <label class="form-control"><span class="label-text">汇率(每 ¥ = 多少 quota,默认 500000)</span><input name="recharge_rate" value="{{.Data.cfg.RechargeRate}}" class="input input-bordered input-sm"></label>
-    <label class="form-control"><span class="label-text">回调基地址(公网,如 https://faka.example.com)</span><input name="recharge_notify_base" value="{{.Data.cfg.RechargeNotifyBase}}" class="input input-bordered input-sm"></label>
     <label class="form-control"><span class="label-text">自身充值商户 pid(用上面商户之一的 pid)</span><input name="recharge_internal_pid" value="{{.Data.cfg.RechargeInternalPID}}" class="input input-bordered input-sm"></label>
   </fieldset>
+
   <button class="btn btn-primary">保存</button>
 </form>
 <form method="post" action="/admin/config/test" class="mt-3"><input name="csrf" type="hidden" value="{{.CSRF}}"><button class="btn btn-ghost">测试 NewAPI 连接</button></form>

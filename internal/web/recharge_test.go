@@ -33,8 +33,6 @@ func newRechargeServer(t *testing.T) (*Server, *store.User) {
 		"recharge_internal_pid": "1001",
 		"recharge_notify_base":  "http://127.0.0.1:8102",
 		"recharge_rate":         "500000",
-		"epay_qrcode_alipay":    "https://qr.alipay.com/test",
-		"epay_qrcode_wxpay":     "wxp://test",
 	}
 	for k, v := range seed {
 		if err := st.SetConfig(ctx, k, v); err != nil {

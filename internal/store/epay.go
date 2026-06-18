@@ -44,6 +44,13 @@ func (s *Store) EpayGetByOutTradeNo(pid int, outTradeNo string) (*EpayOrder, err
 	return s.epayGetOne("SELECT * FROM epay_orders WHERE pid = ? AND out_trade_no = ?", pid, outTradeNo)
 }
 
+// EpayGetByOutTradeNoAny looks up an order by out_trade_no across all merchants.
+// Used by official payment callbacks (alipay/wxpay), which only know the
+// out_trade_no they were given at creation time — not the epay pid.
+func (s *Store) EpayGetByOutTradeNoAny(outTradeNo string) (*EpayOrder, error) {
+	return s.epayGetOne("SELECT * FROM epay_orders WHERE out_trade_no = ? ORDER BY id DESC LIMIT 1", outTradeNo)
+}
+
 func (s *Store) EpayUpdatePaid(tradeNo string, alipayTradeNo string) error {
 	now := time.Now()
 	res, err := s.db.Exec(
@@ -68,13 +75,6 @@ func (s *Store) EpayMarkNotified(tradeNo string) error {
 func (s *Store) EpayIncrementNotifyCount(tradeNo string) error {
 	_, err := s.db.Exec(`UPDATE epay_orders SET notify_count = notify_count + 1 WHERE trade_no = ?`, tradeNo)
 	return err
-}
-
-func (s *Store) EpayFindUnpaidByAmount(money string) (*EpayOrder, error) {
-	return s.epayGetOne(
-		`SELECT * FROM epay_orders WHERE money = ? AND status = 0 ORDER BY created_at DESC LIMIT 1`,
-		money,
-	)
 }
 
 func (s *Store) EpayListAll(limit int) ([]*EpayOrder, error) {

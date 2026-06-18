@@ -1,6 +1,7 @@
 package epay
 
 import (
+	"context"
 	"crypto/subtle"
 	"encoding/json"
 	"fmt"
@@ -9,25 +10,26 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"regexp"
 	"strconv"
-	"strings"
 	"time"
 
+	"faka-site/internal/payment"
 	"faka-site/internal/store"
 	"golang.org/x/crypto/bcrypt"
 )
 
 // Handler serves the epay-gateway endpoints. cfg is a provider (read fresh on
 // each request) so config edits made via the faka-site admin take effect
-// without a restart.
+// without a restart. The payment registry supplies the real official-payment
+// providers (alipay/wxpay).
 type Handler struct {
-	store *store.Store
-	cfg   func() Config
+	store    *store.Store
+	cfg      func() Config
+	registry *payment.Registry
 }
 
 func New(st *store.Store, cfg func() Config) *Handler {
-	return &Handler{store: st, cfg: cfg}
+	return &Handler{store: st, cfg: cfg, registry: payment.DefaultRegistry()}
 }
 
 func (h *Handler) writeJSON(w http.ResponseWriter, code int, v any) {
@@ -100,7 +102,7 @@ func (h *Handler) validateSign(w http.ResponseWriter, r *http.Request) string {
 
 	params := r.URL.Query()
 	if r.Method == http.MethodPost {
-		for k, vs := range r.Form {
+		for k, vs := range r.PostForm {
 			if params.Get(k) == "" && len(vs) > 0 {
 				params.Set(k, vs[0])
 			}
@@ -158,14 +160,15 @@ func (h *Handler) parseCreateParams(w http.ResponseWriter, r *http.Request) (*st
 	}, payType
 }
 
-func isMobile(ua string) bool {
-	keywords := []string{"Android", "iPhone", "iPad", "iPod", "Mobile"}
-	for _, kw := range keywords {
-		if strings.Contains(ua, kw) {
-			return true
-		}
+// notifyURLForChannel returns the official callback URL for a channel, built
+// from the configured public base. This is the URL we tell the official payment
+// API to call after the buyer pays.
+func (h *Handler) notifyURLForChannel(channel string) string {
+	base := h.cfg().NotifyBase
+	if base == "" {
+		return ""
 	}
-	return false
+	return base + "/notify/" + channel
 }
 
 var payPageTpl = template.Must(template.New("pay").Parse(`<!DOCTYPE html>
@@ -186,16 +189,22 @@ h2{margin:0 0 8px;color:#333}
 .status{margin-top:16px;padding:8px;border-radius:6px;display:none}
 .status.pending{display:block;background:#fff3cd;color:#856404}
 .status.paid{display:block;background:#d4edda;color:#155724}
+.status.error{display:block;background:#f8d7da;color:#721c24}
 </style>
 </head>
 <body>
 <div class="card">
 <h2>{{.Name}}</h2>
 <div class="price"><small>&yen;</small>{{.Money}}</div>
+{{if .QRCode}}
 <div id="qrcode"></div>
 <p class="tip">请使用{{.PayTypeName}}扫码支付</p>
 <div id="status" class="status pending">等待支付中...</div>
+{{else}}
+<div id="status" class="status error">{{.ErrMsg}}</div>
+{{end}}
 </div>
+{{if .QRCode}}
 <script>
 new QRCode(document.getElementById("qrcode"),{text:"{{.QRCode}}",width:200,height:200});
 var tradeNo="{{.TradeNo}}";
@@ -215,9 +224,11 @@ function checkStatus(){
 }
 setTimeout(checkStatus,3000);
 </script>
+{{end}}
 </body>
 </html>`))
 
+// Submit renders the epay payment page (HTML) with a real official QR code.
 func (h *Handler) Submit(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet && r.Method != http.MethodPost {
 		h.writeError(w, http.StatusMethodNotAllowed, "method not allowed")
@@ -234,32 +245,29 @@ func (h *Handler) Submit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	c := h.cfg()
-	qr, ok := c.QRCodes[payType]
-	if !ok {
-		qr = c.QRCodes["alipay"]
-	}
+	qrCode, errMsg := h.createOfficialPayment(r.Context(), order, payType)
 
+	// Persist the order regardless: even on payment-create failure we keep a
+	// record so the merchant can reconcile, and the page surfaces the error.
 	if err := h.store.EpayCreate(order); err != nil {
 		h.writeError(w, http.StatusInternalServerError, "create order failed")
 		return
 	}
 
 	pid, _ := strconv.Atoi(r.FormValue("pid"))
-	payTypeName := qr.Name
-	if payTypeName == "" {
-		if payType == "wxpay" {
-			payTypeName = "微信"
-		} else {
-			payTypeName = "支付宝"
-		}
+	payTypeName := payType
+	if payTypeName == "wxpay" {
+		payTypeName = "微信"
+	} else {
+		payTypeName = "支付宝"
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	payPageTpl.Execute(w, map[string]string{
 		"Name":        order.Name,
 		"Money":       order.Money,
-		"QRCode":      qr.URL,
+		"QRCode":      qrCode,
+		"ErrMsg":      errMsg,
 		"TradeNo":     order.TradeNo,
 		"PID":         strconv.Itoa(pid),
 		"Key":         key,
@@ -268,6 +276,7 @@ func (h *Handler) Submit(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// Mapi returns the epay machine API JSON response with the real QR code.
 func (h *Handler) Mapi(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		h.writeError(w, http.StatusMethodNotAllowed, "method not allowed")
@@ -284,10 +293,10 @@ func (h *Handler) Mapi(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	c := h.cfg()
-	qr, ok := c.QRCodes[payType]
-	if !ok {
-		qr = c.QRCodes["alipay"]
+	qrCode, errMsg := h.createOfficialPayment(r.Context(), order, payType)
+	if errMsg != "" {
+		h.writeError(w, http.StatusBadRequest, errMsg)
+		return
 	}
 
 	if err := h.store.EpayCreate(order); err != nil {
@@ -295,10 +304,74 @@ func (h *Handler) Mapi(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	_ = key
 	h.writeSuccess(w, map[string]any{
 		"trade_no": order.TradeNo,
-		"qrcode":   qr.URL,
+		"qrcode":   qrCode,
 	})
+}
+
+// createOfficialPayment asks the official provider (alipay/wxpay) for a real
+// dynamic QR code for this order. On success returns the QR string; on failure
+// returns an empty QRCode and a user-facing error message.
+func (h *Handler) createOfficialPayment(ctx context.Context, order *store.EpayOrder, payType string) (qrCode, errMsg string) {
+	provider, ok := h.registry.Get(payType)
+	if !ok || !provider.Configured() {
+		return "", "该支付渠道(" + payType + ")未配置,请联系管理员"
+	}
+	amountFen, err := yuanStringToFen(order.Money)
+	if err != nil || amountFen <= 0 {
+		return "", "订单金额无效"
+	}
+	res, err := provider.CreatePayment(ctx, payment.PaymentRequest{
+		OutTradeNo: order.OutTradeNo,
+		AmountFen:  amountFen,
+		Subject:    order.Name,
+		NotifyURL:  h.notifyURLForChannel(payType),
+		ReturnURL:  order.ReturnURL,
+	})
+	if err != nil {
+		log.Printf("epay: create payment failed otn=%s channel=%s: %v", order.OutTradeNo, payType, err)
+		return "", "下单失败:" + err.Error()
+	}
+	return res.QRCode, ""
+}
+
+// OfficialNotify handles asynchronous callbacks from Alipay/WeChat. It delegates
+// to the matching provider for signature verification + decryption, then marks
+// the epay order paid and forwards a signed epay notification downstream.
+func (h *Handler) OfficialNotify(channel string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		provider, ok := h.registry.Get(channel)
+		if !ok || !provider.Configured() {
+			log.Printf("notify/%s: channel not configured", channel)
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		info, err := provider.ParseNotify(r)
+		if err != nil {
+			log.Printf("notify/%s: parse/verify failed: %v", channel, err)
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(provider.NotifyOKResponse()))
+			return
+		}
+		// Find the epay order by the merchant's out_trade_no. The official
+		// payment was created with order.OutTradeNo as the official out_trade_no.
+		order, err := h.store.EpayGetByOutTradeNoAny(info.OutTradeNo)
+		if err != nil {
+			log.Printf("notify/%s: load order otn=%s: %v", channel, info.OutTradeNo, err)
+		}
+		if order != nil {
+			if err := h.store.EpayUpdatePaid(order.TradeNo, info.TradeNo); err != nil {
+				log.Printf("notify/%s: mark paid otn=%s: %v", channel, info.OutTradeNo, err)
+			} else {
+				log.Printf("notify/%s: settled otn=%s trade=%s", channel, info.OutTradeNo, info.TradeNo)
+				go h.notifyDownstream(order)
+			}
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(provider.NotifyOKResponse()))
+	}
 }
 
 func (h *Handler) API(w http.ResponseWriter, r *http.Request) {
@@ -457,113 +530,6 @@ func (h *Handler) queryMerchant(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// SmsForwarder POST webhook body
-type smsBody struct {
-	From    string `json:"from"`
-	Content string `json:"content"`
-	Secret  string `json:"secret"`
-}
-
-var moneyRegex = regexp.MustCompile(`([\d]+\.?\d*)元`)
-
-func (h *Handler) SmsNotify(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
-
-	var body smsBody
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		log.Printf("sms notify: decode error: %v", err)
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	c := h.cfg()
-
-	// verify secret
-	if c.SMSSecret != "" && body.Secret != c.SMSSecret {
-		log.Printf("sms notify: invalid secret")
-		w.WriteHeader(http.StatusForbidden)
-		return
-	}
-
-	// extract amount from notification text
-	matches := moneyRegex.FindStringSubmatch(body.Content)
-	if len(matches) < 2 {
-		log.Printf("sms notify: no amount found in: %s", body.Content)
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprint(w, "ok")
-		return
-	}
-	amount := matches[1]
-
-	// find matching unpaid order
-	order, err := h.store.EpayFindUnpaidByAmount(amount)
-	if err != nil {
-		log.Printf("sms notify: query error: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	if order == nil {
-		log.Printf("sms notify: no unpaid order matching amount %s", amount)
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprint(w, "ok")
-		return
-	}
-
-	// check order not expired
-	timeout := time.Duration(c.OrderTimeout) * time.Minute
-	if time.Since(order.CreatedAt) > timeout {
-		log.Printf("sms notify: order %s expired", order.TradeNo)
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprint(w, "ok")
-		return
-	}
-
-	// mark as paid
-	if err := h.store.EpayUpdatePaid(order.TradeNo, "SMS_"+order.TradeNo); err != nil {
-		log.Printf("sms notify: update paid failed: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	log.Printf("sms notify: order %s paid (amount=%s)", order.TradeNo, amount)
-
-	// notify downstream
-	go h.notifyDownstream(order)
-
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprint(w, "ok")
-}
-
-// Confirm is a manual confirm endpoint for testing.
-func (h *Handler) Confirm(w http.ResponseWriter, r *http.Request) {
-	tradeNo := r.URL.Query().Get("trade_no")
-	if tradeNo == "" {
-		h.writeError(w, http.StatusBadRequest, "trade_no required")
-		return
-	}
-
-	order, err := h.store.EpayGetByTradeNo(tradeNo)
-	if err != nil || order == nil {
-		h.writeError(w, http.StatusNotFound, "order not found")
-		return
-	}
-	if order.Status == 1 {
-		h.writeError(w, http.StatusBadRequest, "order already paid")
-		return
-	}
-
-	if err := h.store.EpayUpdatePaid(order.TradeNo, "MANUAL"); err != nil {
-		h.writeError(w, http.StatusInternalServerError, "update failed")
-		return
-	}
-
-	go h.notifyDownstream(order)
-	h.writeSuccess(w, map[string]any{"trade_no": tradeNo, "status": 1})
-}
-
 func (h *Handler) notifyDownstream(o *store.EpayOrder) {
 	c := h.cfg()
 	key := c.FindMerchant(o.PID)
@@ -634,9 +600,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f0f2f5;
 .container{max-width:960px;margin:24px auto;padding:0 16px}
 .card{background:#fff;border-radius:8px;padding:24px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
 .card h2{font-size:16px;margin-bottom:16px;padding-bottom:8px;border-bottom:1px solid #f0f0f0}
-.form-row{display:flex;gap:12px;margin-bottom:12px;align-items:center}
-.form-row label{width:120px;text-align:right;font-size:14px;color:#666;flex-shrink:0}
-.form-row input,.form-row select,.form-row textarea{flex:1;padding:6px 10px;border:1px solid #d9d9d9;border-radius:4px;font-size:14px}
 table{width:100%;border-collapse:collapse;font-size:13px}
 th,td{padding:8px 12px;text-align:left;border-bottom:1px solid #f0f0f0}
 th{background:#fafafa;font-weight:500;color:#666}
@@ -652,7 +615,6 @@ th{background:#fafafa;font-weight:500;color:#666}
 <div class="links">
 <a href="/epay/admin">首页</a>
 <a href="/epay/admin?q=orders">订单</a>
-<a href="/epay/admin?q=setting">配置</a>
 </div>
 </div>
 <div class="container">
@@ -688,8 +650,9 @@ th{background:#fafafa;font-weight:500;color:#666}
 <tr><th>项目</th><th>值</th></tr>
 <tr><td>服务地址</td><td>{{.BaseURL}}</td></tr>
 <tr><td>主商户 PID</td><td>{{if .PrimaryMerchant.PID}}{{.PrimaryMerchant.PID}}{{else}}未配置{{end}}</td></tr>
+<tr><td>支付宝渠道</td><td>{{if .AlipayReady}}已配置{{else}}未配置{{end}}</td></tr>
+<tr><td>微信渠道</td><td>{{if .WxpayReady}}已配置{{else}}未配置{{end}}</td></tr>
 <tr><td>今日订单</td><td>{{.TodayOrders}}</td></tr>
-<tr><td>订单超时</td><td>{{.OrderTimeout}} 分钟</td></tr>
 </table>
 </div>
 
@@ -708,8 +671,12 @@ th{background:#fafafa;font-weight:500;color:#666}
 <input type="text" readonly value="{{.PrimaryMerchant.Key}}" style="background:#f5f5f5" />
 </div>
 <div class="form-row">
-<label>回调地址</label>
-<input type="text" readonly value="{{.BaseURL}}/sms/notify" style="background:#f5f5f5" />
+<label>支付宝回调</label>
+<input type="text" readonly value="{{.BaseURL}}/notify/alipay" style="background:#f5f5f5" />
+</div>
+<div class="form-row">
+<label>微信回调</label>
+<input type="text" readonly value="{{.BaseURL}}/notify/wxpay" style="background:#f5f5f5" />
 </div>
 </div>
 {{end}}
@@ -726,11 +693,16 @@ func (h *Handler) Admin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	primaryMerchant := c.PrimaryMerchant()
+	aliProv, _ := h.registry.Get("alipay")
+	wxProv, _ := h.registry.Get("wxpay")
+	aliReady := aliProv != nil && aliProv.Configured()
+	wxReady := wxProv != nil && wxProv.Configured()
 
 	data := map[string]any{
 		"Tab":             tab,
 		"PrimaryMerchant": primaryMerchant,
-		"OrderTimeout":    c.OrderTimeout,
+		"AlipayReady":     aliReady,
+		"WxpayReady":      wxReady,
 		"BaseURL":         getBaseURL(r),
 		"TodayOrders":     0,
 	}
@@ -752,4 +724,14 @@ func getBaseURL(r *http.Request) string {
 		scheme = "https"
 	}
 	return scheme + "://" + r.Host
+}
+
+// yuanStringToFen parses a "12.34" money string to integer fen.
+func yuanStringToFen(s string) (int64, error) {
+	var f float64
+	_, err := fmt.Sscanf(s, "%f", &f)
+	if err != nil {
+		return 0, err
+	}
+	return int64(f * 100), nil
 }

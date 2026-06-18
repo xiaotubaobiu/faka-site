@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"faka-site/internal/epay"
+	"faka-site/internal/payment"
 	"faka-site/internal/store"
 )
 
@@ -143,8 +144,34 @@ func (s *Server) rechargePay(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ec := s.epayConfig()
-	qr := ec.QRCodes[recharge.Provider]
+	// Look up the gateway-side epay order that was created for this recharge.
+	// Its out_trade_no equals the recharge's out_trade_no.
+	epayOrder, _ := s.store.EpayGetByOutTradeNoAny(recharge.OutTradeNo)
+
+	// Resolve the official provider for this channel and (lazily) obtain the
+	// real dynamic QR code. Once the order is paid we don't need the QR.
+	qr := ""
+	var payErr string
+	if recharge.Status != "paid" {
+		provider := payment.DefaultRegistry().MustGet(recharge.Provider)
+		if !provider.Configured() {
+			payErr = "支付渠道(" + methodLabel(recharge.Provider) + ")未配置,请联系管理员"
+		} else {
+			res, perr := provider.CreatePayment(ctx, payment.PaymentRequest{
+				OutTradeNo: recharge.OutTradeNo,
+				AmountFen:  recharge.AmountFen,
+				Subject:    "发卡站充值",
+				NotifyURL:  s.officialNotifyURL(recharge.Provider),
+			})
+			if perr != nil {
+				log.Printf("recharge/pay: create payment otn=%s: %v", recharge.OutTradeNo, perr)
+				payErr = "下单失败,请稍后重试"
+			} else {
+				qr = res.QRCode
+			}
+		}
+	}
+
 	u, _ := s.store.UserByID(uid)
 	var balance int64
 	if u != nil {
@@ -153,12 +180,24 @@ func (s *Server) rechargePay(w http.ResponseWriter, r *http.Request) {
 	s.render(w, r, "recharge_pay.html", ViewData{
 		Title: "充值",
 		Data: map[string]any{
-			"order":   recharge,
-			"qr":      qr.URL,
-			"method":  methodLabel(recharge.Provider),
-			"balance": balance,
+			"order":     recharge,
+			"qr":        qr,
+			"payErr":    payErr,
+			"method":    methodLabel(recharge.Provider),
+			"balance":   balance,
+			"epayOrder": epayOrder,
 		},
 	})
+}
+
+// officialNotifyURL returns the public callback URL for a payment channel,
+// used as the notify_url passed to the official payment API.
+func (s *Server) officialNotifyURL(channel string) string {
+	cfg := s.mustConfig()
+	if cfg.RechargeNotifyBase != "" {
+		return cfg.RechargeNotifyBase + "/notify/" + channel
+	}
+	return ""
 }
 
 // rechargeNotify is the PUBLIC callback endpoint the epay gateway calls.

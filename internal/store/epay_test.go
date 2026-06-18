@@ -116,55 +116,6 @@ func TestStore_EpayUpdatePaid_NotFound(t *testing.T) {
 	}
 }
 
-func TestStore_EpayFindUnpaidByAmount(t *testing.T) {
-	s, _ := OpenInMemory()
-	defer s.Close()
-	s.Migrate()
-
-	if err := s.EpayCreate(newTestEpayOrder()); err != nil {
-		t.Fatal(err)
-	}
-
-	// Paid order with the same amount should be ignored.
-	paid := newTestEpayOrder()
-	paid.TradeNo = "EP_PAID"
-	paid.OutTradeNo = "M_PAID"
-	if err := s.EpayCreate(paid); err != nil {
-		t.Fatal(err)
-	}
-	if err := s.EpayUpdatePaid("EP_PAID", "ALI"); err != nil {
-		t.Fatal(err)
-	}
-
-	got, err := s.EpayFindUnpaidByAmount("1.00")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if got == nil {
-		t.Fatal("expected an unpaid order, got nil")
-	}
-	if got.TradeNo != "EP20240101000001" {
-		t.Errorf("TradeNo = %s, want EP20240101000001", got.TradeNo)
-	}
-	if got.Status != 0 {
-		t.Errorf("Status = %d, want 0 (unpaid)", got.Status)
-	}
-}
-
-func TestStore_EpayFindUnpaidByAmount_None(t *testing.T) {
-	s, _ := OpenInMemory()
-	defer s.Close()
-	s.Migrate()
-
-	got, err := s.EpayFindUnpaidByAmount("9.99")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if got != nil {
-		t.Errorf("expected nil, got %+v", got)
-	}
-}
-
 func TestStore_EpayNotifiedCounters(t *testing.T) {
 	s, _ := OpenInMemory()
 	defer s.Close()

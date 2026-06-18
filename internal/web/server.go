@@ -24,16 +24,28 @@ type siteConfig struct {
 	SMTPPass    string
 	SMTPFrom    string
 
-	EpayMerchants      string // 编辑用:"pid,key" 每行一个
-	EpayQRAlipay       string
-	EpayQRAlipayName   string
-	EpayQRWxpay        string
-	EpayQRWxpayName    string
-	EpaySMSSecret      string
-	EpayOrderTimeout   string
-	EpayAdminUser      string
-	RechargeRate       string // 每 ¥ 对应 quota,默认 500000
-	RechargeNotifyBase string // 充值回调基地址,如 https://faka.example.com
+	// 支付宝官方(当面付)
+	AlipayAppID      string
+	AlipayPrivateKey string // 显示用:已配置则占位,不入库明文
+	AlipayPublicKey  string
+	AlipayGateway    string
+	AlipaySandbox    string
+
+	// 微信支付官方(v3 Native)
+	WxpayAppID       string
+	WxpayMchID       string
+	WxpayMchSerialNo string
+	WxpayAPIv3Key    string // 显示用:已配置则占位
+	WxpayPrivateKey  string // 显示用:已配置则占位
+
+	// epay 对外网关
+	EpayMerchants    string // 编辑用:"pid,key" 每行一个
+	EpayOrderTimeout string
+	EpayAdminUser    string
+
+	// 充值设置
+	RechargeRate        string // 每 ¥ 对应 quota,默认 500000
+	RechargeNotifyBase  string // 公网回调基地址(官方支付异步通知,需 https)
 	RechargeInternalPID string // 自身充值用的商户 pid
 }
 
@@ -59,16 +71,25 @@ func (s *Server) config() (siteConfig, error) {
 	c := siteConfig{
 		BaseURL: m["newapi_base_url"], AccessToken: m["newapi_access_token"], AdminUserID: m["newapi_admin_user_id"],
 		SMTPHost: m["smtp_host"], SMTPPort: m["smtp_port"], SMTPUser: m["smtp_user"], SMTPPass: m["smtp_pass"], SMTPFrom: m["smtp_from"],
-		EpayMerchants:     merchantsToLines(m["epay_merchants"]),
-		EpayQRAlipay:      m["epay_qrcode_alipay"],
-		EpayQRAlipayName:  m["epay_qrcode_alipay_name"],
-		EpayQRWxpay:       m["epay_qrcode_wxpay"],
-		EpayQRWxpayName:   m["epay_qrcode_wxpay_name"],
-		EpaySMSSecret:     m["epay_sms_secret"],
-		EpayOrderTimeout:  m["epay_order_timeout"],
-		EpayAdminUser:     m["epay_admin_user"],
-		RechargeRate:      m["recharge_rate"],
-		RechargeNotifyBase: m["recharge_notify_base"],
+
+		AlipayAppID:      m["alipay_appid"],
+		AlipayPrivateKey: decryptOrPassthrough(m["alipay_private_key"]),
+		AlipayPublicKey:  decryptOrPassthrough(m["alipay_public_key"]),
+		AlipayGateway:    m["alipay_gateway"],
+		AlipaySandbox:    m["alipay_sandbox"],
+
+		WxpayAppID:       m["wxpay_appid"],
+		WxpayMchID:       m["wxpay_mchid"],
+		WxpayMchSerialNo: m["wxpay_serial_no"],
+		WxpayAPIv3Key:    decryptOrPassthrough(m["wxpay_apiv3_key"]),
+		WxpayPrivateKey:  decryptOrPassthrough(m["wxpay_private_key"]),
+
+		EpayMerchants:    merchantsToLines(m["epay_merchants"]),
+		EpayOrderTimeout: m["epay_order_timeout"],
+		EpayAdminUser:    m["epay_admin_user"],
+
+		RechargeRate:        m["recharge_rate"],
+		RechargeNotifyBase:  m["recharge_notify_base"],
 		RechargeInternalPID: m["recharge_internal_pid"],
 	}
 	if c.RechargeRate == "" {
@@ -135,12 +156,13 @@ func (s *Server) Routes() http.Handler {
 
 	// epay-gateway: protocol endpoints at root (what external merchants call),
 	// management under /epay/ to avoid colliding with faka-site's /admin/.
+	// /notify/{alipay,wxpay} are the PUBLIC official payment callbacks.
 	eh := epay.New(s.store, s.epayConfig)
 	mux.HandleFunc("/mapi.php", eh.Mapi)
 	mux.HandleFunc("/submit.php", eh.Submit)
 	mux.HandleFunc("/api.php", eh.API)
-	mux.HandleFunc("/sms/notify", eh.SmsNotify)
-	mux.HandleFunc("/epay/confirm", eh.WithAdminAuth(eh.Confirm))
+	mux.HandleFunc("/notify/alipay", eh.OfficialNotify("alipay"))
+	mux.HandleFunc("/notify/wxpay", eh.OfficialNotify("wxpay"))
 	mux.HandleFunc("/epay/admin", eh.WithAdminAuth(eh.Admin))
 	mux.HandleFunc("/epay/admin/", eh.WithAdminAuth(eh.Admin))
 	return s.securityHeaders(mux)
