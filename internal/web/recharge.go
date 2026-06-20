@@ -144,12 +144,34 @@ func (s *Server) rechargePay(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Look up the gateway-side epay order that was created for this recharge.
-	// Its out_trade_no equals the recharge's out_trade_no.
-	epayOrder, _ := s.store.EpayGetByOutTradeNoAny(recharge.OutTradeNo)
+	isHX := r.Header.Get("HX-Request") == "true"
 
-	// Resolve the official provider for this channel and (lazily) obtain the
-	// real dynamic QR code. Once the order is paid we don't need the QR.
+	// HTMX poll: only report payment status — never regenerate the QR. While
+	// unpaid we return 204 so htmx skips the swap and the existing QR stays put
+	// (no more flicker / "跳来跳去"), and we stop hitting Alipay every 5s. The
+	// QR is generated once on the full page load below. Once paid we render the
+	// success fragment which (having no hx-get) also stops the polling.
+	if isHX {
+		if recharge.Status != "paid" {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		u, _ := s.store.UserByID(uid)
+		var balance int64
+		if u != nil {
+			balance = u.Balance
+		}
+		s.renderBlock(w, "recharge_pay.html", "pay_status", ViewData{Data: map[string]any{
+			"order":   recharge,
+			"method":  methodLabel(recharge.Provider),
+			"balance": balance,
+		}})
+		return
+	}
+
+	// Full page load: look up the gateway-side epay order, resolve the official
+	// provider, and obtain the real dynamic QR code (once). Paid orders skip it.
+	epayOrder, _ := s.store.EpayGetByOutTradeNoAny(recharge.OutTradeNo)
 	qr := ""
 	var payErr string
 	if recharge.Status != "paid" {
@@ -177,21 +199,17 @@ func (s *Server) rechargePay(w http.ResponseWriter, r *http.Request) {
 	if u != nil {
 		balance = u.Balance
 	}
-	data := map[string]any{
-		"order":     recharge,
-		"qr":        qr,
-		"payErr":    payErr,
-		"method":    methodLabel(recharge.Provider),
-		"balance":   balance,
-		"epayOrder": epayOrder,
-	}
-	// HTMX poll asks for just the status fragment; returning the full page here
-	// would nest the whole layout inside the polled <div> ("page tearing").
-	if r.Header.Get("HX-Request") == "true" {
-		s.renderBlock(w, "recharge_pay.html", "pay_status", ViewData{Data: data})
-		return
-	}
-	s.render(w, r, "recharge_pay.html", ViewData{Title: "充值", Data: data})
+	s.render(w, r, "recharge_pay.html", ViewData{
+		Title: "充值",
+		Data: map[string]any{
+			"order":     recharge,
+			"qr":        qr,
+			"payErr":    payErr,
+			"method":    methodLabel(recharge.Provider),
+			"balance":   balance,
+			"epayOrder": epayOrder,
+		},
+	})
 }
 
 // officialNotifyURL returns the public callback URL for a payment channel,
