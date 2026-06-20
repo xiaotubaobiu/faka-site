@@ -126,6 +126,7 @@ func (s *Server) Routes() http.Handler {
 	authed.HandleFunc("GET /recharge", s.getRecharge)
 	authed.HandleFunc("POST /recharge", s.postRecharge)
 	authed.HandleFunc("GET /recharge/pay/{id}", s.rechargePay)
+	authed.HandleFunc("GET /recharge/qr/{id}", s.rechargeQR)
 	authed.HandleFunc("POST /logout", s.postLogout)
 
 	adminMux := http.NewServeMux()
