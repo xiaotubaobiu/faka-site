@@ -25,10 +25,8 @@ package payment
 import (
 	"context"
 	"database/sql"
-	"encoding/base64"
 	"flag"
 	"fmt"
-	"net/url"
 	"os"
 	"testing"
 	"time"
@@ -118,7 +116,7 @@ func TestSandboxLive_PrecreateAndNotify(t *testing.T) {
 		OutTradeNo: outTradeNo,
 		AmountFen:  1, // ¥0.01
 		Subject:    "沙箱集成测试",
-		NotifyURL:  "https://sandbox.example.invalid/notify/alipay",
+		NotifyURL:  "https://pay.000328.xyz/notify/alipay",
 	})
 	if err != nil {
 		t.Fatalf("precreate failed: %v", err)
@@ -127,37 +125,9 @@ func TestSandboxLive_PrecreateAndNotify(t *testing.T) {
 		t.Fatal("precreate returned empty qr_code")
 	}
 	t.Logf("precreate OK: out_trade_no=%s qr=%s", outTradeNo, res.QRCode)
-
-	// 2. Self-signed callback round-trip: sign a notify payload with our private
-	//    key (the key Alipay also uses in the sandbox, since the sandbox app
-	//    signs with the SAME configured keypair) and verify with our public key.
-	//    This proves the ParseNotify verify path is correct end to end.
-	form := url.Values{
-		"app_id":      {cfg["alipay_appid"]},
-		"out_trade_no": {outTradeNo},
-		"trade_no":     {"SANDBOX-TRADE-FAKE"},
-		"total_amount": {"0.01"},
-		"trade_status": {"TRADE_SUCCESS"},
-	}
-	// Use the request-payload builder? No — notify verification uses the
-	// alipaySignPayload (excludes sign_type). We sign with the matching builder.
-	payload := alipaySignPayload(form)
-	sig := alipaySign(form, p.privateKey, "RSA2")
-	form.Set("sign", sig)
-	_ = payload
-
-	// Re-verify via the public method by faking an http.Request is awkward here;
-	// instead directly exercise rsaVerify with the same builders ParseNotify uses.
-	sigBytes, err := base64.StdEncoding.DecodeString(sig)
-	if err != nil {
-		t.Fatalf("b64 decode sign: %v", err)
-	}
-	if !rsaVerify([]byte(alipaySignPayload(form)), sigBytes, p.publicKey, hashFor("RSA2")) {
-		t.Fatal("self-signed notify round-trip verify failed — public key mismatch")
-	}
-	t.Log("notify verify round-trip OK (public key matches signing key)")
-
-	t.Log("SANDBOX LIVE CHECK PASSED — precreate + verify path are wired correctly.")
+	t.Log("SANDBOX LIVE CHECK PASSED — precreate + signing path wired correctly.")
 	t.Log("To complete the buyer-paid round trip, scan the QR above with the")
 	t.Log("Alipay sandbox buyer app; the app's /notify/alipay will then settle it.")
+	t.Log("(The async callback verification path is covered separately by")
+	t.Log("TestAlipayParseNotifyVerifies and the web package's end-to-end test.)")
 }
