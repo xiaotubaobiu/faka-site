@@ -1,0 +1,155 @@
+# Continuous integration + release pipeline for faka-site.
+#
+# Two jobs:
+#   test         — runs on every PR and push to main. vets + tests the Go tree
+#                  with default build tags, which excludes the `sandboxlive`
+#                  suite (those need real Alipay keys and only run on the
+#                  configured server).
+#   build-deploy — runs ONLY when a `v*` tag is pushed. Builds the multi-stage
+#                  Docker image, pushes it to Docker Hub (xiaotubao/faka-site),
+#                  then SSHes into the HK server to pull the new tag and
+#                  recreate the container. Data and payment keys live in bind
+#                  mounts so they survive redeploy.
+#
+# Required repo secrets:
+#   DOCKERHUB_USERNAME  — Docker Hub account (xiaotubao)
+#   DOCKERHUB_TOKEN     — Docker Hub access token
+#   DEPLOY_SSH_HOST     — HK server host (103.85.224.229)
+#   DEPLOY_SSH_USER     — SSH user (root)
+#   DEPLOY_SSH_KEY      — SSH private key contents
+
+name: release
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+
+# Cancel superseded runs on the same ref.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: lint + test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: go test
+        # Default build tags → `sandboxlive` files are NOT compiled, so they
+        # can't reach for keys that don't exist in CI.
+        run: go test ./... -count=1
+
+  build-deploy:
+    name: build + push image + deploy
+    needs: test
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Derive image tag from git tag
+        id: tag
+        run: echo "name=GIT_TAG::${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          # Push both the specific git tag and `latest` so the server can pin
+          # to a tag and roll forward by pulling `latest`.
+          tags: |
+            xiaotubao/faka-site:${{ steps.tag.outputs.GIT_TAG }}
+            xiaotubao/faka-site:latest
+          push: true
+          # The multi-stage Dockerfile already handles node (CSS) and Go, so
+          # no extra setup is needed here.
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Deploy to HK server
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DEPLOY_SSH_HOST }}
+          username: ${{ secrets.DEPLOY_SSH_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          # Stop and remove with the SAME volume mounts the compose file uses,
+          # so the data DB and payment keys carry over. We use `docker run`
+          # directly (instead of `docker compose`) so the running image is the
+          # pinned tag, while leaving docker-compose.yml untouched for local dev.
+          envs: GIT_TAG
+          script: |
+            set -euo pipefail
+            GIT_TAG='${{ steps.tag.outputs.GIT_TAG }}'
+            echo "deploying xiaotubao/faka-site:$GIT_TAG"
+            docker login -u '${{ secrets.DOCKERHUB_USERNAME }}' -p '${{ secrets.DOCKERHUB_TOKEN }}'
+            docker pull "xiaotubao/faka-site:$GIT_TAG"
+
+            # Capture the running container's env + mounts so the replacement
+            # is byte-identical apart from the image.
+            cd /opt/faka-site
+
+            # Source runtime secrets from the compose .env (SESSION_SECRET etc.)
+            # by reusing the compose-defined service. We stop the old container
+            # and bring up the new one via compose with an explicit image.
+            # Override the image for this run by exporting it:
+            export FAKA_IMAGE="xiaotubao/faka-site:$GIT_TAG"
+
+            docker stop faka-site 2>/dev/null || true
+            docker rm faka-site 2>/dev/null || true
+
+            # Re-run with the same port mapping + env + volumes the app expects.
+            # Env values come from /opt/faka-site/.env (SESSION_SECRET, PAY_SECRET,
+            # ADMIN_EMAIL, ADMIN_PASSWORD) so secrets never enter this workflow.
+            set -a; . ./.env; set +a
+            docker run -d \
+              --name faka-site \
+              --restart unless-stopped \
+              -p 127.0.0.1:8090:8080 \
+              -e FAKA_LISTEN=:8080 \
+              -e FAKA_DB=/app/data/data.db \
+              -e COOKIE_SECURE=true \
+              -e KEYS_DIR=/app/keys \
+              -e SESSION_SECRET \
+              -e PAY_SECRET \
+              -e ADMIN_EMAIL \
+              -e ADMIN_PASSWORD \
+              -v "$PWD/data:/app/data" \
+              -v "$PWD/keys:/app/keys" \
+              "xiaotubao/faka-site:$GIT_TAG"
+
+            # Health check: wait for the login page to come back.
+            for i in $(seq 1 30); do
+              code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8090/login || echo 000)
+              if [ "$code" = "200" ]; then echo "health OK after ${i}s"; break; fi
+              sleep 1
+            done
+            [ "$code" = "200" ] || { echo "health check FAILED (code=$code)"; docker logs --tail 50 faka-site; exit 1; }
+
+            docker image prune -f
+            echo "deploy of $GIT_TAG complete"
