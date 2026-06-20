@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"log"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -106,7 +107,20 @@ func (s *Server) postConfig(w http.ResponseWriter, r *http.Request) {
 		rate = "500000"
 	}
 	set("recharge_rate", rate)
-	set("recharge_notify_base", strings.TrimRight(r.PostFormValue("recharge_notify_base"), "/"))
+	notifyBase := strings.TrimRight(strings.TrimSpace(r.PostFormValue("recharge_notify_base")), "/")
+	// recharge_notify_base is the public URL Alipay/WeChat call back into. It
+	// MUST be an https URL so the callback isn't downgraded to plaintext (and so
+	// the official payment APIs accept it). Reject malformed / non-https values
+	// at save time rather than silently storing a value that breaks recharge.
+	if notifyBase != "" && !isValidHTTPSBase(notifyBase) {
+		s.render(w, r, "admin_config.html", ViewData{Title: "配置", Data: map[string]any{
+			"cfg":     s.mustConfig(),
+			"keys":    payment.KeyFileStatuses(),
+			"cfgErr":  "公网回调基地址必须为 https 开头的完整 URL,例如 https://faka.example.com",
+		}})
+		return
+	}
+	set("recharge_notify_base", notifyBase)
 	set("recharge_internal_pid", r.PostFormValue("recharge_internal_pid"))
 	s.render(w, r, "admin_config.html", ViewData{Title: "配置", Data: map[string]any{
 		"cfg":  s.mustConfig(),
@@ -161,4 +175,22 @@ func validateNewPassword(pw, confirm string) string {
 		return "两次密码不一致"
 	}
 	return ""
+}
+
+// isValidHTTPSBase reports whether s is an absolute https URL with a host and
+// no path/query/fragment (a base used to build callback URLs). Used to validate
+// recharge_notify_base at save time: the official payment APIs require an
+// https callback, and a silently-wrong value here is the root cause of
+// "paid but never credited" recharge orders.
+func isValidHTTPSBase(s string) bool {
+	u, err := url.Parse(s)
+	if err != nil || u.Scheme != "https" || u.Host == "" {
+		return false
+	}
+	// Reject any path/query/fragment: bases are like "https://faka.example.com",
+	// not "https://x/sub" or "https://x?q=1". (Trailing slash is trimmed by caller.)
+	if u.Path != "" || u.RawQuery != "" || u.Fragment != "" {
+		return false
+	}
+	return true
 }

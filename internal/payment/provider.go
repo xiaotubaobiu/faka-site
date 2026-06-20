@@ -40,12 +40,18 @@ type PaymentProvider interface {
 	NotifyOKResponse() string                        // 官方回调成功应答体(支付宝 "success",微信 JSON)
 }
 
-// Registry holds the active providers keyed by channel name. The web layer
-// rebuilds it whenever admin config changes (via SetProviders), so handlers
-// always observe the latest credentials without a restart.
+// Registry holds the active providers keyed by channel name. It is rebuilt only
+// when the underlying credentials actually change (see SetProvidersIfChanged),
+// so a high-frequency caller like the per-request config loader can invoke it
+// on every request without re-parsing PEM keys or introducing races between a
+// concurrent precreate and a poll.
 type Registry struct {
 	mu        sync.RWMutex
 	providers map[string]PaymentProvider
+	// fingerprint holds an opaque digest of the inputs that produced the
+	// current providers. SetProvidersIfChanged compares against it to skip
+	// redundant rebuilds.
+	fingerprint string
 }
 
 var defaultRegistry = &Registry{providers: map[string]PaymentProvider{}}
@@ -56,6 +62,9 @@ func DefaultRegistry() *Registry { return defaultRegistry }
 // SetProviders replaces all registered providers atomically. Pass nil/empty
 // values for channels that aren't configured yet — Get will then report them
 // as unavailable and return ErrNotConfigured on use.
+//
+// The fingerprint is forced to change, so this always rebuilds. Use
+// SetProvidersIfChanged from hot paths to avoid redundant work.
 func (r *Registry) SetProviders(ps ...PaymentProvider) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -66,6 +75,30 @@ func (r *Registry) SetProviders(ps ...PaymentProvider) {
 		}
 		r.providers[p.Name()] = p
 	}
+	r.fingerprint = "" // next SetProvidersIfChanged("") with non-equal fp rebuilds
+}
+
+// SetProvidersIfChanged rebuilds the registry only when fingerprint differs
+// from the one used to build the current providers. Returns true if a rebuild
+// actually happened. Callers should compute the fingerprint from the same
+// inputs they build the providers from (e.g. a hash of the relevant config
+// map + key-file contents), so that identical inputs short-circuit here and
+// avoid re-parsing PEM keys on every request.
+func (r *Registry) SetProvidersIfChanged(fingerprint string, build func() []PaymentProvider) bool {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if fingerprint == r.fingerprint {
+		return false
+	}
+	r.providers = map[string]PaymentProvider{}
+	for _, p := range build() {
+		if p == nil {
+			continue
+		}
+		r.providers[p.Name()] = p
+	}
+	r.fingerprint = fingerprint
+	return true
 }
 
 // Get returns the provider for a channel ("alipay"|"wxpay"). The returned

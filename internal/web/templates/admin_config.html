@@ -2,6 +2,7 @@
 <h2 class="text-xl font-semibold mb-3">站点配置</h2>
 {{if .Data.msg}}<div class="alert alert-success mb-3"><span>{{.Data.msg}}</span></div>{{end}}
 {{if .Data.keyMsg}}<div class="alert alert-info mb-3"><span>{{.Data.keyMsg}}</span></div>{{end}}
+{{if .Data.cfgErr}}<div class="alert alert-error mb-3"><span>{{.Data.cfgErr}}</span></div>{{end}}
 {{if .Data.testErr}}<div class="alert alert-error mb-3"><span>{{.Data.testErr}}</span></div>{{end}}
 {{if .Data.testOK}}<div class="alert alert-success mb-3"><span>连接正常,且为管理员 ✓</span></div>{{end}}
 

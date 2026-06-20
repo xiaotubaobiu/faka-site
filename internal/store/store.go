@@ -30,6 +30,12 @@ func OpenInMemory() (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
+	// Each connection to a :memory: database gets its OWN private database, so
+	// a goroutine (e.g. an async payment downstream-notify) that happens to
+	// grab a different connection would see an empty store and silently lose
+	// writes. Pin to a single connection so all access shares one database.
+	// The file-backed Open() already does the same thing.
+	db.SetMaxOpenConns(1)
 	return &Store{db: db}, nil
 }
 
