@@ -177,17 +177,21 @@ func (s *Server) rechargePay(w http.ResponseWriter, r *http.Request) {
 	if u != nil {
 		balance = u.Balance
 	}
-	s.render(w, r, "recharge_pay.html", ViewData{
-		Title: "充值",
-		Data: map[string]any{
-			"order":     recharge,
-			"qr":        qr,
-			"payErr":    payErr,
-			"method":    methodLabel(recharge.Provider),
-			"balance":   balance,
-			"epayOrder": epayOrder,
-		},
-	})
+	data := map[string]any{
+		"order":     recharge,
+		"qr":        qr,
+		"payErr":    payErr,
+		"method":    methodLabel(recharge.Provider),
+		"balance":   balance,
+		"epayOrder": epayOrder,
+	}
+	// HTMX poll asks for just the status fragment; returning the full page here
+	// would nest the whole layout inside the polled <div> ("page tearing").
+	if r.Header.Get("HX-Request") == "true" {
+		s.renderBlock(w, "recharge_pay.html", "pay_status", ViewData{Data: data})
+		return
+	}
+	s.render(w, r, "recharge_pay.html", ViewData{Title: "充值", Data: data})
 }
 
 // officialNotifyURL returns the public callback URL for a payment channel,

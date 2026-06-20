@@ -74,7 +74,12 @@ func startOrderSweeper(st *store.Store) {
 		if n, err := st.EpayExpireStale(cutoff); err != nil {
 			log.Printf("order sweeper: %v", err)
 		} else if n > 0 {
-			log.Printf("order sweeper: closed %d unpaid order(s) older than %dm", n, mins)
+			log.Printf("order sweeper: closed %d unpaid epay order(s) older than %dm", n, mins)
+		}
+		if n, err := st.ExpireStaleRecharges(context.Background(), cutoff.Unix()); err != nil {
+			log.Printf("recharge sweeper: %v", err)
+		} else if n > 0 {
+			log.Printf("recharge sweeper: expired %d unpaid recharge order(s) older than %dm", n, mins)
 		}
 	}
 }

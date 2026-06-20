@@ -55,9 +55,22 @@ func (s *Store) RechargeOrderByTradeNo(ctx context.Context, outTradeNo string) (
 	return o, nil
 }
 
+// ExpireStaleRecharges marks pending recharge orders created before cutoff
+// (unix seconds) as expired, so unpaid orders stop showing as 待支付 and drop
+// out of the user's recharge list. Returns the number expired.
+func (s *Store) ExpireStaleRecharges(ctx context.Context, cutoff int64) (int64, error) {
+	res, err := s.db.ExecContext(ctx,
+		`UPDATE recharge_orders SET status='expired' WHERE status='pending' AND created_at < ?`,
+		cutoff)
+	if err != nil {
+		return 0, err
+	}
+	return res.RowsAffected()
+}
+
 func (s *Store) RechargeOrdersByUser(ctx context.Context, userID int64) ([]RechargeOrder, error) {
 	rows, err := s.db.QueryContext(ctx,
-		`SELECT id,user_id,provider,out_trade_no,amount_fen,quota,COALESCE(trade_no,''),status,created_at,COALESCE(paid_at,0) FROM recharge_orders WHERE user_id=? ORDER BY id DESC`,
+		`SELECT id,user_id,provider,out_trade_no,amount_fen,quota,COALESCE(trade_no,''),status,created_at,COALESCE(paid_at,0) FROM recharge_orders WHERE user_id=? AND status != 'expired' ORDER BY id DESC`,
 		userID)
 	if err != nil {
 		return nil, err
