@@ -66,8 +66,10 @@ func initTemplates() {
 func joinCodes(ss []string) string { return strings.Join(ss, "\n") }
 
 // qrDataURL returns a data: URL PNG (base64) of a QR code encoding s, for
-// use as an <img src>. Empty input yields an empty string.
-func qrDataURL(s string) string {
+// use as an <img src>. Returns template.URL (not string) so html/template
+// trusts the data: scheme instead of replacing it with #ZgotmplZ. Empty
+// input yields an empty URL.
+func qrDataURL(s string) template.URL {
 	if s == "" {
 		return ""
 	}
@@ -75,7 +77,7 @@ func qrDataURL(s string) string {
 	if err != nil {
 		return ""
 	}
-	return "data:image/png;base64," + base64.StdEncoding.EncodeToString(png)
+	return template.URL("data:image/png;base64," + base64.StdEncoding.EncodeToString(png))
 }
 
 // renderBlock 仅渲染指定块(无 layout),用于 HTMX 片段。
