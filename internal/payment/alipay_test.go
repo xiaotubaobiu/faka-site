@@ -50,14 +50,15 @@ func TestAlipaySignVerifyRoundTrip(t *testing.T) {
 	}
 	sigBytes, _ := base64.StdEncoding.DecodeString(sig)
 
-	// Verifying the exact signed payload must succeed.
-	if !rsaVerify([]byte(alipaySignPayload(form)), sigBytes, p.publicKey, crypto.SHA256) {
+	// Verifying the exact signed payload must succeed. Gateway requests sign
+	// over sign_type, so verify against alipayRequestSignPayload (matches alipaySign).
+	if !rsaVerify([]byte(alipayRequestSignPayload(form)), sigBytes, p.publicKey, crypto.SHA256) {
 		t.Fatal("verify failed on round-trip")
 	}
 
 	// Tampering must fail.
 	form.Set("biz_content", `{"out_trade_no":"TAMPERED"}`)
-	if rsaVerify([]byte(alipaySignPayload(form)), sigBytes, p.publicKey, crypto.SHA256) {
+	if rsaVerify([]byte(alipayRequestSignPayload(form)), sigBytes, p.publicKey, crypto.SHA256) {
 		t.Fatal("verify should fail on tampered payload")
 	}
 }
