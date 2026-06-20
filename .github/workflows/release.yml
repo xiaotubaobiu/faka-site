@@ -65,7 +65,8 @@ jobs:
 
       - name: Derive image tag from git tag
         id: tag
-        run: echo "name=GIT_TAG::${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+        # Strip the refs/tags/ prefix so v1.1.0-recharge-fix → image tag.
+        run: echo "GIT_TAG=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -102,7 +103,6 @@ jobs:
           # so the data DB and payment keys carry over. We use `docker run`
           # directly (instead of `docker compose`) so the running image is the
           # pinned tag, while leaving docker-compose.yml untouched for local dev.
-          envs: GIT_TAG
           script: |
             set -euo pipefail
             GIT_TAG='${{ steps.tag.outputs.GIT_TAG }}'
@@ -114,19 +114,21 @@ jobs:
             # is byte-identical apart from the image.
             cd /opt/faka-site
 
-            # Source runtime secrets from the compose .env (SESSION_SECRET etc.)
-            # by reusing the compose-defined service. We stop the old container
-            # and bring up the new one via compose with an explicit image.
-            # Override the image for this run by exporting it:
-            export FAKA_IMAGE="xiaotubao/faka-site:$GIT_TAG"
-
+            # Source runtime secrets from the server's .env (SESSION_SECRET,
+            # PAY_SECRET, optionally ADMIN_EMAIL/ADMIN_PASSWORD) so they never
+            # enter the workflow or the image. We do NOT use `set -u` here
+            # because ADMIN_* are optional and may be absent from .env.
             docker stop faka-site 2>/dev/null || true
             docker rm faka-site 2>/dev/null || true
-
-            # Re-run with the same port mapping + env + volumes the app expects.
-            # Env values come from /opt/faka-site/.env (SESSION_SECRET, PAY_SECRET,
-            # ADMIN_EMAIL, ADMIN_PASSWORD) so secrets never enter this workflow.
             set -a; . ./.env; set +a
+
+            # Build the -e flags for optional admin bootstrap vars only when
+            # they're actually set, so docker run never sees an empty/undefined
+            # expansion under `set -u`.
+            ADMIN_FLAGS=()
+            [ -n "${ADMIN_EMAIL:-}" ]     && ADMIN_FLAGS+=( -e ADMIN_EMAIL="$ADMIN_EMAIL" )
+            [ -n "${ADMIN_PASSWORD:-}" ]  && ADMIN_FLAGS+=( -e ADMIN_PASSWORD="$ADMIN_PASSWORD" )
+
             docker run -d \
               --name faka-site \
               --restart unless-stopped \
@@ -137,8 +139,7 @@ jobs:
               -e KEYS_DIR=/app/keys \
               -e SESSION_SECRET \
               -e PAY_SECRET \
-              -e ADMIN_EMAIL \
-              -e ADMIN_PASSWORD \
+              "${ADMIN_FLAGS[@]}" \
               -v "$PWD/data:/app/data" \
               -v "$PWD/keys:/app/keys" \
               "xiaotubao/faka-site:$GIT_TAG"
