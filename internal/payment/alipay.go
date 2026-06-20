@@ -105,7 +105,7 @@ func (p *AlipayProvider) CreatePayment(ctx context.Context, req PaymentRequest) 
 	if err != nil {
 		return PaymentResult{}, err
 	}
-	httpReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	httpReq.Header.Set("Content-Type", "application/x-www-form-urlencoded;charset=utf-8")
 
 	resp, err := p.httpClient.Do(httpReq)
 	if err != nil {
