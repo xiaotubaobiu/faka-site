@@ -51,6 +51,22 @@ func (s *Store) EpayGetByOutTradeNoAny(outTradeNo string) (*EpayOrder, error) {
 	return s.epayGetOne("SELECT * FROM epay_orders WHERE out_trade_no = ? ORDER BY id DESC LIMIT 1", outTradeNo)
 }
 
+// EpayExpireStale marks unpaid orders (status 0) created before cutoff as
+// expired (status 2). Paid orders (status 1) are never touched. Returns the
+// number of orders closed. Used by the background sweeper to auto-close
+// recharge orders the user never paid.
+func (s *Store) EpayExpireStale(cutoff time.Time) (int64, error) {
+	res, err := s.db.Exec(
+		`UPDATE epay_orders SET status = 2 WHERE status = 0 AND created_at < ?`,
+		cutoff,
+	)
+	if err != nil {
+		return 0, err
+	}
+	n, _ := res.RowsAffected()
+	return n, nil
+}
+
 func (s *Store) EpayUpdatePaid(tradeNo string, alipayTradeNo string) error {
 	now := time.Now()
 	res, err := s.db.Exec(

@@ -1,9 +1,12 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"os"
+	"strconv"
+	"time"
 
 	"faka-site/internal/auth"
 	"faka-site/internal/payment"
@@ -47,6 +50,31 @@ func main() {
 	}
 
 	srv := web.NewServer(st, secret, secureCookie)
+	go startOrderSweeper(st)
 	log.Printf("faka-site listening on %s", listen)
 	log.Fatal(http.ListenAndServe(listen, srv.Routes()))
+}
+
+// startOrderSweeper periodically closes recharge/epay orders that were created
+// but never paid: every minute it marks unpaid orders (status 0) older than the
+// configured epay_order_timeout (minutes, default 5) as expired (status 2).
+// Alipay also auto-closes the trade via timeout_express, so an expired QR can
+// no longer be paid after this window.
+func startOrderSweeper(st *store.Store) {
+	t := time.NewTicker(time.Minute)
+	defer t.Stop()
+	for range t.C {
+		mins := 5
+		if v, _ := st.GetConfig(context.Background(), "epay_order_timeout"); v != "" {
+			if n, err := strconv.Atoi(v); err == nil && n > 0 {
+				mins = n
+			}
+		}
+		cutoff := time.Now().Add(-time.Duration(mins) * time.Minute)
+		if n, err := st.EpayExpireStale(cutoff); err != nil {
+			log.Printf("order sweeper: %v", err)
+		} else if n > 0 {
+			log.Printf("order sweeper: closed %d unpaid order(s) older than %dm", n, mins)
+		}
+	}
 }

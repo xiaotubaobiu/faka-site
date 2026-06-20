@@ -81,6 +81,11 @@ func (p *AlipayProvider) CreatePayment(ctx context.Context, req PaymentRequest) 
 		"total_amount": fenToYuan(req.AmountFen),
 		"subject":      req.Subject,
 	}
+	// timeout_express tells Alipay to auto-close the trade when unpaid past the
+	// window (e.g. "5m"), so a stale QR can't be paid after we expire the order.
+	if req.TimeoutExpress != "" {
+		biz["timeout_express"] = req.TimeoutExpress
+	}
 	bizJSON, _ := json.Marshal(biz)
 
 	form := url.Values{}
@@ -114,7 +119,7 @@ func (p *AlipayProvider) CreatePayment(ctx context.Context, req PaymentRequest) 
 	if err := json.Unmarshal(body, &envelope); err != nil {
 		return PaymentResult{}, fmt.Errorf("alipay precreate: bad response: %s", truncate(body))
 	}
-	key := "alipay.trade.precreate_response"
+	key := "alipay_trade_precreate_response"
 	raw, ok := envelope[key]
 	if !ok {
 		return PaymentResult{}, fmt.Errorf("alipay precreate: missing response: %s", truncate(body))
@@ -204,7 +209,7 @@ func alipaySign(v url.Values, key *rsa.PrivateKey, signType string) string {
 	if key == nil {
 		return ""
 	}
-	payload := alipaySignPayload(v)
+	payload := alipayRequestSignPayload(v)
 	h := hashFor(signType)
 	sig, err := rsa.SignPKCS1v15(rand.Reader, key, h, hashBytes([]byte(payload), h))
 	if err != nil {
@@ -213,8 +218,32 @@ func alipaySign(v url.Values, key *rsa.PrivateKey, signType string) string {
 	return base64.StdEncoding.EncodeToString(sig)
 }
 
+// alipayRequestSignPayload builds the canonical string to sign for an openapi
+// GATEWAY REQUEST: sorted, non-empty params joined by &, excluding only sign.
+// Unlike async-notify verification, gateway requests sign over sign_type too;
+// omitting it makes Alipay reject with sub_code isv.invalid-signature.
+func alipayRequestSignPayload(v url.Values) string {
+	keys := make([]string, 0, len(v))
+	for k, vs := range v {
+		if k == "sign" {
+			continue
+		}
+		if len(vs) == 0 || vs[0] == "" {
+			continue
+		}
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	parts := make([]string, 0, len(keys))
+	for _, k := range keys {
+		parts = append(parts, k+"="+v.Get(k))
+	}
+	return strings.Join(parts, "&")
+}
+
 // alipaySignPayload builds the canonical string to sign: sorted, non-empty
-// params joined by &, excluding sign and sign_type.
+// params joined by &, excluding sign and sign_type. Used for async-notify
+// verification (notify omits sign_type from the signed set).
 func alipaySignPayload(v url.Values) string {
 	keys := make([]string, 0, len(v))
 	for k, vs := range v {

@@ -323,12 +323,17 @@ func (h *Handler) createOfficialPayment(ctx context.Context, order *store.EpayOr
 	if err != nil || amountFen <= 0 {
 		return "", "订单金额无效"
 	}
+	timeout := h.cfg().OrderTimeout
+	if timeout <= 0 {
+		timeout = 5
+	}
 	res, err := provider.CreatePayment(ctx, payment.PaymentRequest{
-		OutTradeNo: order.OutTradeNo,
-		AmountFen:  amountFen,
-		Subject:    order.Name,
-		NotifyURL:  h.notifyURLForChannel(payType),
-		ReturnURL:  order.ReturnURL,
+		OutTradeNo:     order.OutTradeNo,
+		AmountFen:      amountFen,
+		Subject:        order.Name,
+		NotifyURL:      h.notifyURLForChannel(payType),
+		ReturnURL:      order.ReturnURL,
+		TimeoutExpress: fmt.Sprintf("%dm", timeout),
 	})
 	if err != nil {
 		log.Printf("epay: create payment failed otn=%s channel=%s: %v", order.OutTradeNo, payType, err)

@@ -13,6 +13,8 @@ type PaymentRequest struct {
 	Subject    string
 	NotifyURL  string
 	ReturnURL  string
+	// TimeoutExpress 可选,支付宝当面付订单超时时长(如 "5m"),到点未付自动关闭交易。
+	TimeoutExpress string
 }
 
 // PaymentResult 返回支付展示信息。QRCode 为二维码内容(可为空),PayURL 为跳转地址(可为空)。
