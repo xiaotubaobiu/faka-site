@@ -11,11 +11,17 @@
 
         <div>
           <label class="text-sm font-medium">支付方式</label>
-          <div class="join mt-1.5 w-full">
-            <input class="join-item btn flex-1" type="radio" name="method" value="alipay" id="m-alipay" {{if not .Data.method}}checked{{else}}{{if eq .Data.method "alipay"}}checked{{end}}{{end}}>
-            <label for="m-alipay" class="join-item btn flex-1 justify-center">支付宝</label>
-            <input class="join-item btn flex-1" type="radio" name="method" value="wxpay" id="m-wxpay">
-            <label for="m-wxpay" class="join-item btn flex-1 justify-center">微信支付</label>
+          <div class="grid grid-cols-2 gap-2 mt-1.5">
+            <label for="m-alipay" class="pay-pick cursor-pointer rounded-xl border border-base-300 p-3 flex items-center gap-2 transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary/10 has-[:checked]:text-primary">
+              <input class="hidden" type="radio" name="method" value="alipay" id="m-alipay" {{if not .Data.method}}checked{{else}}{{if eq .Data.method "alipay"}}checked{{end}}{{end}}>
+              <span class="text-xl">💳</span>
+              <span class="text-sm font-medium">支付宝</span>
+            </label>
+            <label for="m-wxpay" class="pay-pick cursor-pointer rounded-xl border border-base-300 p-3 flex items-center gap-2 transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary/10 has-[:checked]:text-primary">
+              <input class="hidden" type="radio" name="method" value="wxpay" id="m-wxpay">
+              <span class="text-xl">💚</span>
+              <span class="text-sm font-medium">微信支付</span>
+            </label>
           </div>
         </div>
 

@@ -26,5 +26,9 @@
   </div>
   {{end}}
 </div>
-{{else}}<p class="opacity-60">暂无订单,<a class="link" href="/buy">去购买</a>。</p>{{end}}
+{{else}}<div class="flex flex-col items-center justify-center py-12 text-center">
+  <div class="text-5xl opacity-30 mb-3">📦</div>
+  <p class="text-base-content/60">还没有订单</p>
+  <a class="btn btn-primary btn-sm mt-4" href="/buy">去买第一单</a>
+</div>{{end}}
 {{end}}
