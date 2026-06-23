@@ -170,4 +170,11 @@ body {
   .alert-success { background: var(--success-bg); color: var(--success-text); border: 1px solid transparent; border-radius: 12px; }
   .alert-warning { background: var(--warning-bg); color: var(--warning-text); border: 1px solid transparent; border-radius: 12px; }
   .alert-error   { background: var(--error-bg);   color: var(--error-text);   border: 1px solid transparent; border-radius: 12px; }
+
+  /* 支付方式选择卡：radio 选中时高亮主色 */
+  .pay-pick:has(input:checked) {
+    border-color: var(--brand-solid) !important;
+    background-color: var(--bg-subtle) !important;
+    box-shadow: 0 0 0 3px rgba(234,88,12,0.15);
+  }
 }
