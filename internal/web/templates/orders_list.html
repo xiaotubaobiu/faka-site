@@ -3,32 +3,30 @@
 <div class="grid gap-3">
   {{range .Data.orders}}
   {{$codes := index $.Data.codes .ID}}
-  <div class="card bg-base-100 shadow border border-base-200">
-    <div class="card-body p-4 gap-2">
-      <div class="flex flex-wrap items-center gap-2 justify-between">
-        <a href="/orders/{{.ID}}" class="font-semibold link link-hover">#{{.ID}}</a>
-        <span class="text-sm opacity-70">{{.CodeCount}} 个 · 每 {{usd .QuotaPerCode}}</span>
-        <span class="badge badge-sm {{if eq .Status "completed"}}badge-success{{else if eq .Status "partial"}}badge-warning{{else}}badge-error{{end}}">{{.Status}}</span>
-      </div>
-      {{if $codes}}
-      <div class="flex flex-wrap items-center gap-1.5">
-        {{range $i, $c := $codes}}{{if lt $i 3}}<span class="kbd kbd-sm cursor-pointer" data-copy="{{$c}}">{{$c}}</span>{{end}}{{end}}
-        {{if gt (len $codes) 3}}
-        <details class="inline">
-          <summary class="btn btn-ghost btn-xs">展开全部({{len $codes}})</summary>
-          <div class="flex flex-wrap gap-1.5 mt-2">{{range $i, $c := $codes}}{{if ge $i 3}}<span class="kbd kbd-sm cursor-pointer" data-copy="{{$c}}">{{$c}}</span>{{end}}{{end}}</div>
-        </details>
-        {{end}}
-        <button class="btn btn-ghost btn-xs" data-copy-all="{{joinCodes $codes}}">复制全部</button>
-      </div>
-      {{else}}<span class="text-sm opacity-50">无码</span>{{end}}
+  <div class="card-warm card-hover p-4">
+    <div class="flex flex-wrap items-center gap-2 justify-between mb-2">
+      <a href="/orders/{{.ID}}" class="font-semibold hover:underline" style="color:var(--brand-solid)">#{{.ID}}</a>
+      <span class="text-sm" style="color:var(--text-muted)">{{.CodeCount}} 个 · 每 {{usd .QuotaPerCode}}</span>
+      <span class="badge badge-sm {{if eq .Status "completed"}}badge-success{{else if eq .Status "partial"}}badge-warning{{else}}badge-error{{end}} px-2.5 py-1 rounded-full text-xs font-semibold">{{.Status}}</span>
     </div>
+    {{if $codes}}
+    <div class="flex flex-wrap items-center gap-1.5">
+      {{range $i, $c := $codes}}{{if lt $i 3}}<span class="kbd kbd-sm cursor-pointer px-2 py-1 rounded-md text-xs font-mono" style="background:var(--bg-subtle);color:var(--brand-solid);border:1px solid var(--border-base)" data-copy="{{$c}}">{{$c}}</span>{{end}}{{end}}
+      {{if gt (len $codes) 3}}
+      <details class="inline">
+        <summary class="btn btn-ghost btn-xs" style="color:var(--text-muted)">展开全部({{len $codes}})</summary>
+        <div class="flex flex-wrap gap-1.5 mt-2">{{range $i, $c := $codes}}{{if ge $i 3}}<span class="kbd kbd-sm cursor-pointer px-2 py-1 rounded-md text-xs font-mono" style="background:var(--bg-subtle);color:var(--brand-solid);border:1px solid var(--border-base)" data-copy="{{$c}}">{{$c}}</span>{{end}}{{end}}</div>
+      </details>
+      {{end}}
+      <button class="btn btn-ghost btn-xs inline-flex items-center gap-1" style="color:var(--text-muted)" data-copy-all="{{joinCodes $codes}}"><svg class="icon" style="width:12px;height:12px"><use href="#icon-copy"></use></svg>复制全部</button>
+    </div>
+    {{else}}<span class="text-sm" style="color:var(--text-faint)">无码</span>{{end}}
   </div>
   {{end}}
 </div>
-{{else}}<div class="flex flex-col items-center justify-center py-12 text-center">
-  <div class="text-5xl opacity-30 mb-3">📦</div>
-  <p class="text-base-content/60">还没有订单</p>
-  <a class="btn btn-primary btn-sm mt-4" href="/buy">去买第一单</a>
+{{else}}<div class="flex flex-col items-center justify-center py-16 text-center">
+  <div class="w-16 h-16 rounded-2xl inline-flex items-center justify-center mb-4" style="background:var(--bg-subtle)"><svg class="icon" style="width:32px;height:32px;color:var(--text-faint)"><use href="#icon-package"></use></svg></div>
+  <p class="text-base font-medium" style="color:var(--text-muted)">还没有订单</p>
+  <a class="btn-brand inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold mt-4" href="/buy"><svg class="icon" style="width:14px;height:14px"><use href="#icon-cart"></use></svg>去买第一单</a>
 </div>{{end}}
 {{end}}
