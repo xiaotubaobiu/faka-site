@@ -12,7 +12,7 @@ import (
 	"github.com/skip2/go-qrcode"
 )
 
-//go:embed templates/*.html static/app.css static/htmx.min.js
+//go:embed templates/*.html static/app.css static/htmx.min.js static/icons.js
 var assets embed.FS
 
 type ViewUser struct {
