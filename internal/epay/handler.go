@@ -172,34 +172,60 @@ func (h *Handler) notifyURLForChannel(channel string) string {
 }
 
 var payPageTpl = template.Must(template.New("pay").Parse(`<!DOCTYPE html>
-<html>
+<html lang="zh" data-theme="emerald">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{.Name}} - 收款</title>
-<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script src="/static/icons.js" defer></script>
+<script src="/static/qrcode.min.js"></script>
 <style>
-body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#f5f5f5}
-.card{background:#fff;border-radius:12px;padding:32px;text-align:center;box-shadow:0 2px 12px rgba(0,0,0,.1);max-width:360px;width:100%}
-h2{margin:0 0 8px;color:#333}
-.price{font-size:32px;color:#ff6a00;margin:12px 0}
-.price small{font-size:16px}
-#qrcode{display:flex;justify-content:center;margin:20px 0}
-.tip{color:#999;font-size:14px}
-.status{margin-top:16px;padding:8px;border-radius:6px;display:none}
-.status.pending{display:block;background:#fff3cd;color:#856404}
-.status.paid{display:block;background:#d4edda;color:#155724}
-.status.error{display:block;background:#f8d7da;color:#721c24}
+:root,[data-theme="emerald"]{
+  --bg-base:#FFFBF5;--bg-surface:#FFFFFF;--bg-subtle:#FFF7ED;--border:#FED7AA;
+  --text-strong:#7C2D12;--text-base:#9A3412;--text-muted:#A16207;--text-faint:#B45309;
+  --brand-grad-from:#F59E0B;--brand-grad-to:#EA580C;--brand-solid:#EA580C;
+  --success-bg:#DCFCE7;--success-text:#15803D;
+  --warning-bg:#FEF3C7;--warning-text:#A16207;
+  --error-bg:#FEE2E2;--error-text:#B91C1C;
+  --shadow:0 12px 32px rgba(234,88,12,0.18);
+}
+[data-theme="dark"]{
+  --bg-base:#1C1410;--bg-surface:#2A1F18;--bg-subtle:#3D2E22;--border:#4A382A;
+  --text-strong:#FEF3C7;--text-base:#FDE68A;--text-muted:#FCD34D;--text-faint:#D97706;
+  --brand-grad-from:#FBBF24;--brand-grad-to:#F97316;--brand-solid:#F97316;
+  --success-bg:#052E16;--success-text:#86EFAC;
+  --warning-bg:#422006;--warning-text:#FCD34D;
+  --error-bg:#450A0A;--error-text:#FCA5A5;
+  --shadow:0 12px 32px rgba(0,0,0,0.5);
+}
+*{box-sizing:border-box}
+body{font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:var(--bg-base);color:var(--text-base);-webkit-font-smoothing:antialiased}
+.card{background:var(--bg-surface);border:1px solid var(--border);border-radius:20px;padding:36px 32px;text-align:center;box-shadow:var(--shadow);max-width:380px;width:calc(100% - 32px)}
+.brand-mark{width:48px;height:48px;border-radius:14px;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;background-image:linear-gradient(135deg,var(--brand-grad-from),var(--brand-grad-to));box-shadow:0 4px 12px rgba(234,88,12,0.25)}
+.brand-mark svg{width:24px;height:24px;stroke:#fff;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+h2{margin:0 0 4px;color:var(--text-strong);font-size:18px;font-weight:700}
+.price{font-size:40px;color:var(--brand-solid);margin:8px 0 4px;font-weight:800;letter-spacing:-0.02em}
+.price small{font-size:20px;font-weight:600}
+#qrcode{display:flex;justify-content:center;margin:24px 0;padding:16px;background:var(--bg-subtle);border-radius:16px;border:1px solid var(--border)}
+#qrcode img,#qrcode canvas{border-radius:8px}
+.tip{color:var(--text-muted);font-size:14px;margin:0}
+.status{margin-top:16px;padding:10px 14px;border-radius:10px;font-size:13px;font-weight:500;display:none}
+.status.pending{display:flex;align-items:center;justify-content:center;gap:6px;background:var(--warning-bg);color:var(--warning-text)}
+.status.paid{display:flex;align-items:center;justify-content:center;gap:6px;background:var(--success-bg);color:var(--success-text)}
+.status.error{display:block;background:var(--error-bg);color:var(--error-text)}
+.spinner{width:14px;height:14px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;display:inline-block;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
 <div class="card">
+<div class="brand-mark"><svg viewBox="0 0 24 24"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/></svg></div>
 <h2>{{.Name}}</h2>
 <div class="price"><small>&yen;</small>{{.Money}}</div>
 {{if .QRCode}}
 <div id="qrcode"></div>
 <p class="tip">请使用{{.PayTypeName}}扫码支付</p>
-<div id="status" class="status pending">等待支付中...</div>
+<div id="status" class="status pending"><span class="spinner"></span>等待支付中...</div>
 {{else}}
 <div id="status" class="status error">{{.ErrMsg}}</div>
 {{end}}
@@ -214,7 +240,7 @@ function checkStatus(){
  .then(function(d){
   if(d.data && d.data.status===1){
    document.getElementById("status").className="status paid";
-   document.getElementById("status").textContent="支付成功";
+   document.getElementById("status").innerHTML="支付成功";
    setTimeout(function(){
     if("{{.ReturnURL}}"!=""){window.location.href="{{.ReturnURL}}";}
    },1500);
