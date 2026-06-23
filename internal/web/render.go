@@ -3,6 +3,7 @@ package web
 import (
 	"embed"
 	"encoding/base64"
+	"fmt"
 	"html/template"
 	"net/http"
 	"strings"
@@ -52,6 +53,22 @@ func initTemplates() {
 			"joinCodes": joinCodes,
 			"qrDataURL": qrDataURL,
 			"fen2yuan":  fenToYuan,
+			// dict builds a map from alternating key/value pairs, so templates can
+			// pass multiple values into a sub-template (used by navitem in layout).
+			"dict": func(values ...interface{}) (map[string]interface{}, error) {
+				if len(values)%2 != 0 {
+					return nil, fmt.Errorf("dict: odd number of arguments")
+				}
+				m := make(map[string]interface{}, len(values)/2)
+				for i := 0; i < len(values); i += 2 {
+					k, ok := values[i].(string)
+					if !ok {
+						return nil, fmt.Errorf("dict: key %d is not a string", i)
+					}
+					m[k] = values[i+1]
+				}
+				return m, nil
+			},
 		}).ParseFS(assets, "templates/layout.html"))
 		files := []string{"templates/" + name}
 		for _, p := range pagePartials[name] {
