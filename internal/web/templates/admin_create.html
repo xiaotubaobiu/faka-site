@@ -1,11 +1,29 @@
 {{define "content"}}
-<h2 class="text-xl font-semibold mb-3">建账户</h2>
-{{if .Data.error}}<div class="alert alert-error mb-3"><span>{{.Data.error}}</span></div>{{end}}
-<form method="post" action="/admin/create" class="card bg-base-100 shadow border border-base-200 p-4 grid gap-3 max-w-xl">
+<h2 class="text-xl font-bold mb-4 flex items-center gap-2" style="color:var(--text-strong)"><svg class="icon" style="width:20px;height:20px;color:var(--brand-solid)"><use href="#icon-user-plus"></use></svg>建账户</h2>
+{{if .Data.error}}<div class="alert alert-error mb-4 px-4 py-3 flex items-center gap-2 text-sm"><svg class="icon shrink-0"><use href="#icon-alert"></use></svg><span>{{.Data.error}}</span></div>{{end}}
+<form method="post" action="/admin/create" class="card-warm p-6 grid gap-4 max-w-xl">
   <input name="csrf" type="hidden" value="{{.CSRF}}">
-  <input name="email" placeholder="用户邮箱" value="{{.Data.email}}" required class="input input-bordered">
-  <input name="password" type="password" placeholder="密码(≥6位)" required class="input input-bordered">
-  <input name="confirm" type="password" placeholder="确认密码" required class="input input-bordered">
-  <button class="btn btn-primary">创建</button>
+  <label class="block">
+    <span class="text-xs font-medium uppercase tracking-wide block mb-1.5" style="color:var(--text-muted)">用户邮箱</span>
+    <div class="relative">
+      <span class="absolute left-3 top-1/2 -translate-y-1/2" style="color:var(--text-faint)"><svg class="icon" style="width:16px;height:16px"><use href="#icon-mail"></use></svg></span>
+      <input name="email" placeholder="user@example.com" value="{{.Data.email}}" required class="input-warm w-full pl-9 py-2.5 text-sm">
+    </div>
+  </label>
+  <label class="block">
+    <span class="text-xs font-medium uppercase tracking-wide block mb-1.5" style="color:var(--text-muted)">密码（≥6位）</span>
+    <div class="relative">
+      <span class="absolute left-3 top-1/2 -translate-y-1/2" style="color:var(--text-faint)"><svg class="icon" style="width:16px;height:16px"><use href="#icon-lock"></use></svg></span>
+      <input name="password" type="password" placeholder="••••••••" required class="input-warm w-full pl-9 py-2.5 text-sm">
+    </div>
+  </label>
+  <label class="block">
+    <span class="text-xs font-medium uppercase tracking-wide block mb-1.5" style="color:var(--text-muted)">确认密码</span>
+    <div class="relative">
+      <span class="absolute left-3 top-1/2 -translate-y-1/2" style="color:var(--text-faint)"><svg class="icon" style="width:16px;height:16px"><use href="#icon-lock"></use></svg></span>
+      <input name="confirm" type="password" placeholder="••••••••" required class="input-warm w-full pl-9 py-2.5 text-sm">
+    </div>
+  </label>
+  <button class="btn-brand py-2.5 text-sm font-semibold mt-2">创建账户</button>
 </form>
 {{end}}

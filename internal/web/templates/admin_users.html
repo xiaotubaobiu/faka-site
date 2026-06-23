@@ -1,14 +1,19 @@
 {{define "content"}}
-<h2 class="text-xl font-semibold mb-3">用户管理</h2>
-<a href="/admin/create" class="btn btn-primary btn-sm mb-3">建账户</a>
+<div class="flex items-center justify-between mb-4">
+  <h2 class="text-xl font-bold flex items-center gap-2" style="color:var(--text-strong)"><svg class="icon" style="width:20px;height:20px;color:var(--brand-solid)"><use href="#icon-users"></use></svg>用户管理</h2>
+  <a href="/admin/create" class="btn-brand inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold"><svg class="icon" style="width:14px;height:14px"><use href="#icon-user-plus"></use></svg>建账户</a>
+</div>
+<div class="card-warm overflow-hidden">
 <div class="overflow-x-auto">
 <table class="table table-sm">
-<tr><th>ID</th><th>邮箱</th><th>角色</th><th>余额</th><th>状态</th><th>操作</th></tr>
-{{range .Data.users}}<tr><td>{{.ID}}</td><td class="break-all">{{.Email}}</td><td>{{.Role}}</td><td>{{usd .Balance}}</td><td>{{if eq .Status 1}}<span class="badge badge-success badge-sm">启用</span>{{else}}<span class="badge badge-ghost badge-sm">禁用</span>{{end}}</td>
-<td class="whitespace-nowrap">
-  <a class="link" href="/admin/balance?id={{.ID}}">加余额</a> ·
-  <a class="link" href="/admin/reset?id={{.ID}}">重置密码</a> ·
-  <form method="post" action="/admin/users/{{.ID}}/status" class="inline"><input name="csrf" type="hidden" value="{{$.CSRF}}"><input type="hidden" name="status" value="{{if eq .Status 1}}0{{else}}1{{end}}"><button class="link">{{if eq .Status 1}}禁用{{else}}启用{{end}}</button></form>
+<thead><tr class="text-xs uppercase tracking-wide" style="color:var(--text-muted)"><th>ID</th><th>邮箱</th><th>角色</th><th>余额</th><th>状态</th><th>操作</th></tr></thead>
+<tbody style="color:var(--text-base)">
+{{range .Data.users}}<tr><td>{{.ID}}</td><td class="break-all">{{.Email}}</td><td>{{.Role}}</td><td>{{usd .Balance}}</td><td>{{if eq .Status 1}}<span class="badge badge-success badge-sm px-2 py-0.5 rounded-full text-xs">启用</span>{{else}}<span class="badge badge-neutral badge-sm px-2 py-0.5 rounded-full text-xs">禁用</span>{{end}}</td>
+<td class="whitespace-nowrap text-sm">
+  <a class="hover:underline" style="color:var(--brand-solid)" href="/admin/balance?id={{.ID}}">加余额</a> ·
+  <a class="hover:underline" style="color:var(--brand-solid)" href="/admin/reset?id={{.ID}}">重置密码</a> ·
+  <form method="post" action="/admin/users/{{.ID}}/status" class="inline"><input name="csrf" type="hidden" value="{{$.CSRF}}"><input type="hidden" name="status" value="{{if eq .Status 1}}0{{else}}1{{end}}"><button class="hover:underline" style="color:var(--brand-solid)">{{if eq .Status 1}}禁用{{else}}启用{{end}}</button></form>
 </td></tr>{{end}}
-</table></div>
+</tbody></table></div>
+</div>
 {{end}}
