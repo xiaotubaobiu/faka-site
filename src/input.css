@@ -1,3 +1,180 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ============ 主题变量 ============ */
+/* 明色主题（默认，data-theme="emerald" 或无 data-theme） */
+:root,
+[data-theme="emerald"] {
+  --bg-base: #FFFBF5;     /* 页面背景，amber-50 偏暖白 */
+  --bg-surface: #FFFFFF;  /* 卡片表面 */
+  --bg-subtle: #FFF7ED;   /* 次级背景，orange-50 */
+  --border-base: #FED7AA; /* 边框，amber-200 */
+
+  --text-strong: #7C2D12; /* 标题，orange-900 */
+  --text-base: #9A3412;   /* 正文，orange-800 */
+  --text-muted: #A16207;  /* 次要文字，yellow-700 */
+  --text-faint: #B45309;  /* 辅助/占位，amber-700 */
+
+  --brand-grad-from: #F59E0B; /* 主色渐变起点，amber-500 */
+  --brand-grad-to: #EA580C;   /* 主色渐变终点，orange-600 */
+  --brand-solid: #EA580C;     /* 主色实色，用于强调 */
+  --brand-hover-from: #D97706;
+  --brand-hover-to: #C2410C;
+  --brand-active-from: #B45309;
+  --brand-active-to: #9A3412;
+
+  /* 语义状态色：背景/文字成对 */
+  --success-bg: #DCFCE7;  --success-text: #15803D;
+  --warning-bg: #FEF3C7;  --warning-text: #A16207;
+  --error-bg: #FEE2E2;    --error-text: #B91C1C;
+  --neutral-bg: #F1F5F9;  --neutral-text: #475569;
+
+  --shadow-sm: 0 1px 2px rgba(245,158,11,0.06);
+  --shadow-md: 0 4px 12px rgba(234,88,12,0.10);
+}
+
+/* 暗色主题：深棕背景（非纯黑）+ 暖橙强调色 */
+[data-theme="dark"] {
+  --bg-base: #1C1410;     /* 页面背景，暖色调深棕 */
+  --bg-surface: #2A1F18;  /* 卡片表面，深棕 */
+  --bg-subtle: #3D2E22;   /* 次级背景 */
+  --border-base: #4A382A; /* 边框 */
+
+  --text-strong: #FEF3C7; /* 标题，amber-100 */
+  --text-base: #FDE68A;   /* 正文，amber-200 */
+  --text-muted: #FCD34D;  /* 次要文字，amber-300 */
+  --text-faint: #D97706;  /* 辅助，amber-600 */
+
+  /* 主色稍亮以在深背景上可见 */
+  --brand-grad-from: #FBBF24; /* amber-400 */
+  --brand-grad-to: #F97316;   /* orange-500 */
+  --brand-solid: #F97316;
+  --brand-hover-from: #FCD34D;
+  --brand-hover-to: #FB923C;
+  --brand-active-from: #D97706;
+  --brand-active-to: #EA580C;
+
+  --success-bg: #052E16;  --success-text: #86EFAC;
+  --warning-bg: #422006;  --warning-text: #FCD34D;
+  --error-bg: #450A0A;    --error-text: #FCA5A5;
+  --neutral-bg: #1E293B;  --neutral-text: #CBD5E1;
+
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+}
+
+/* ============ 基础应用 ============ */
+body {
+  background-color: var(--bg-base);
+  color: var(--text-base);
+  font-feature-settings: "cv11", "ss01";
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Lucide 图标默认样式（配合 icons.js sprite 的 <use>） */
+.icon {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  vertical-align: middle;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ============ 工具类 ============ */
+@layer components {
+  /* 主 CTA 按钮：暖橙渐变，含完整交互态 */
+  .btn-brand {
+    background-image: linear-gradient(135deg, var(--brand-grad-from), var(--brand-grad-to));
+    color: #FFFFFF;
+    border: none;
+    border-radius: 12px;
+    box-shadow: var(--shadow-md);
+    transition: background-image 0.15s ease, box-shadow 0.15s ease, transform 0.05s ease;
+    cursor: pointer;
+  }
+  .btn-brand:hover:not(:disabled) {
+    background-image: linear-gradient(135deg, var(--brand-hover-from), var(--brand-hover-to));
+    box-shadow: 0 2px 6px rgba(234,88,12,0.4);
+  }
+  .btn-brand:active:not(:disabled) {
+    background-image: linear-gradient(135deg, var(--brand-active-from), var(--brand-active-to));
+    box-shadow: 0 0 0 3px rgba(234,88,12,0.3);
+    transform: translateY(1px);
+  }
+  .btn-brand:disabled {
+    background-image: none;
+    background-color: #F3F4F6;
+    color: #9CA3AF;
+    box-shadow: none;
+    cursor: not-allowed;
+  }
+  [data-theme="dark"] .btn-brand:disabled {
+    background-color: #374151;
+    color: #6B7280;
+  }
+
+  /* 次要按钮：白底（暗色为深底）+ 暖橙边框 */
+  .btn-secondary {
+    background-color: var(--bg-surface);
+    color: var(--brand-solid);
+    border: 1px solid var(--border-base);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+  }
+  .btn-secondary:hover:not(:disabled) {
+    background-color: var(--bg-subtle);
+  }
+
+  /* 卡片：暖色边框 + 暖色阴影 */
+  .card-warm {
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-base);
+    border-radius: 16px;
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow 0.15s ease;
+  }
+  .card-warm.card-hover:hover {
+    box-shadow: var(--shadow-md);
+  }
+
+  /* 状态徽章：4 档语义色 */
+  .badge-success { background: var(--success-bg); color: var(--success-text); }
+  .badge-warning { background: var(--warning-bg); color: var(--warning-text); }
+  .badge-error   { background: var(--error-bg);   color: var(--error-text); }
+  .badge-neutral { background: var(--neutral-bg); color: var(--neutral-text); }
+
+  /* 输入框：暖色边框，聚焦时主色 ring */
+  .input-warm {
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-base);
+    border-radius: 10px;
+    color: var(--text-strong);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  .input-warm:focus {
+    outline: none;
+    border-color: var(--brand-solid);
+    box-shadow: 0 0 0 3px rgba(234,88,12,0.15);
+  }
+  .input-warm::placeholder {
+    color: var(--text-faint);
+  }
+
+  /* alert 提示：用语义色 */
+  .alert-success { background: var(--success-bg); color: var(--success-text); border: 1px solid transparent; border-radius: 12px; }
+  .alert-warning { background: var(--warning-bg); color: var(--warning-text); border: 1px solid transparent; border-radius: 12px; }
+  .alert-error   { background: var(--error-bg);   color: var(--error-text);   border: 1px solid transparent; border-radius: 12px; }
+
+  /* 支付方式选择卡：radio 选中时高亮主色 */
+  .pay-pick:has(input:checked) {
+    border-color: var(--brand-solid) !important;
+    background-color: var(--bg-subtle) !important;
+    box-shadow: 0 0 0 3px rgba(234,88,12,0.15);
+  }
+}

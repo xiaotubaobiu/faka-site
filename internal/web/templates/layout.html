@@ -4,88 +4,82 @@
 <title>{{.Title}}</title>
 <link rel="stylesheet" href="/static/app.css">
 <script src="/static/htmx.min.js" defer></script>
+<script src="/static/icons.js" defer></script>
 </head>
-<body class="bg-base-200 min-h-screen">
+<body>
 <div class="flex min-h-screen">
-  {{if .User}}<aside id="app-sidebar" class="hidden lg:flex w-60 shrink-0 flex-col bg-base-100 border-r border-base-300 sticky top-0 h-screen">
-    <div class="h-14 flex items-center px-5 border-b border-base-300">
-      <span class="font-bold text-lg">🎫 发卡站</span>
+  {{if .User}}<aside id="app-sidebar" class="hidden lg:flex w-60 shrink-0 flex-col sticky top-0 h-screen" style="background-color:var(--bg-surface);border-right:1px solid var(--border-base)">
+    <div class="h-14 flex items-center px-5" style="border-bottom:1px solid var(--border-base)">
+      <svg class="icon mr-2" style="width:20px;height:20px;color:var(--brand-solid)"><use href="#icon-ticket"></use></svg>
+      <span class="font-bold text-lg" style="color:var(--text-strong)">发卡站</span>
     </div>
     <nav class="flex flex-col py-2 flex-1 overflow-y-auto">
       {{$t := .Title}}
-      <a href="/" class="h-11 flex items-center gap-3 px-5 border-l-4 {{if eq $t "概览"}}bg-base-200 text-primary font-semibold border-primary{{else}}text-base-content/70 hover:bg-base-200 border-transparent{{end}}">📊 概览</a>
-      <a href="/buy" class="h-11 flex items-center gap-3 px-5 border-l-4 {{if eq $t "购买"}}bg-base-200 text-primary font-semibold border-primary{{else}}text-base-content/70 hover:bg-base-200 border-transparent{{end}}">🛒 买码</a>
-      <a href="/recharge" class="h-11 flex items-center gap-3 px-5 border-l-4 {{if eq $t "充值"}}bg-base-200 text-primary font-semibold border-primary{{else}}text-base-content/70 hover:bg-base-200 border-transparent{{end}}">💰 充值</a>
-      <a href="/orders" class="h-11 flex items-center gap-3 px-5 border-l-4 {{if eq $t "订单"}}bg-base-200 text-primary font-semibold border-primary{{else}}text-base-content/70 hover:bg-base-200 border-transparent{{end}}">📦 订单</a>
+      {{template "navitem" dict "Match" "概览" "Href" "/" "Icon" "dashboard" "Label" "概览" "T" $t}}
+      {{template "navitem" dict "Match" "购买" "Href" "/buy" "Icon" "cart" "Label" "买码" "T" $t}}
+      {{template "navitem" dict "Match" "充值" "Href" "/recharge" "Icon" "wallet" "Label" "充值" "T" $t}}
+      {{template "navitem" dict "Match" "订单" "Href" "/orders" "Icon" "package" "Label" "订单" "T" $t}}
       {{if eq .User.Role "admin"}}
-      <div class="text-xs text-base-content/40 px-5 mt-3 mb-1 uppercase tracking-wide">管理</div>
-      <a href="/admin/users" class="h-11 flex items-center gap-3 px-5 border-l-4 {{if eq $t "用户管理"}}bg-base-200 text-primary font-semibold border-primary{{else}}text-base-content/70 hover:bg-base-200 border-transparent{{end}}">👤 用户</a>
-      <a href="/admin/create" class="h-11 flex items-center gap-3 px-5 border-l-4 {{if eq $t "建账户"}}bg-base-200 text-primary font-semibold border-primary{{else}}text-base-content/70 hover:bg-base-200 border-transparent{{end}}">➕ 建账户</a>
-      <a href="/admin/config" class="h-11 flex items-center gap-3 px-5 border-l-4 {{if eq $t "配置"}}bg-base-200 text-primary font-semibold border-primary{{else}}text-base-content/70 hover:bg-base-200 border-transparent{{end}}">⚙️ 配置</a>
-      <a href="/admin/merchants" class="h-11 flex items-center gap-3 px-5 border-l-4 {{if eq $t "商户管理"}}bg-base-200 text-primary font-semibold border-primary{{else}}text-base-content/70 hover:bg-base-200 border-transparent{{end}}">🏪 商户管理</a>
-      <a href="/admin/docs" class="h-11 flex items-center gap-3 px-5 border-l-4 {{if eq $t "支付配置文档"}}bg-base-200 text-primary font-semibold border-primary{{else}}text-base-content/70 hover:bg-base-200 border-transparent{{end}}">📖 支付文档</a>
+      <div class="text-xs px-5 mt-3 mb-1 uppercase tracking-wide" style="color:var(--text-faint)">管理</div>
+      {{template "navitem" dict "Match" "用户管理" "Href" "/admin/users" "Icon" "users" "Label" "用户" "T" $t}}
+      {{template "navitem" dict "Match" "建账户" "Href" "/admin/create" "Icon" "user-plus" "Label" "建账户" "T" $t}}
+      {{template "navitem" dict "Match" "配置" "Href" "/admin/config" "Icon" "settings" "Label" "配置" "T" $t}}
+      {{template "navitem" dict "Match" "商户管理" "Href" "/admin/merchants" "Icon" "store" "Label" "商户管理" "T" $t}}
+      {{template "navitem" dict "Match" "支付配置文档" "Href" "/admin/docs" "Icon" "book" "Label" "支付文档" "T" $t}}
       {{end}}
     </nav>
-    <div class="mt-auto m-3 p-3 rounded-xl bg-base-200">
+    <div class="mt-auto m-3 p-3 rounded-2xl" style="background-color:var(--bg-subtle)">
       <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-full bg-primary text-primary-content grid place-items-center font-semibold shrink-0">{{slice .User.Email 0 1}}</div>
+        <div class="w-9 h-9 rounded-full grid place-items-center font-semibold shrink-0" style="background-image:linear-gradient(135deg,var(--brand-grad-from),var(--brand-grad-to));color:#fff">{{slice .User.Email 0 1}}</div>
         <div class="min-w-0">
-          <div class="text-sm font-medium truncate">{{.User.Email}}</div>
-          <div class="mt-0.5">{{if eq .User.Role "admin"}}<span class="badge badge-success badge-xs">管理员</span>{{else}}<span class="badge badge-ghost badge-xs">普通用户</span>{{end}}</div>
+          <div class="text-sm font-medium truncate" style="color:var(--text-strong)">{{.User.Email}}</div>
+          <div class="mt-0.5">{{if eq .User.Role "admin"}}<span class="badge badge-success badge-xs">管理员</span>{{else}}<span class="badge badge-neutral badge-xs">普通用户</span>{{end}}</div>
         </div>
       </div>
-      <div class="text-xs text-base-content/60 mt-2">余额 <span class="text-base-content font-semibold">{{.User.BalanceFmt}}</span></div>
-      <a href="/logout" class="btn btn-ghost btn-xs btn-block mt-2">退出</a>
+      <div class="text-xs mt-2" style="color:var(--text-muted)">余额 <span class="font-semibold" style="color:var(--text-strong)">{{.User.BalanceFmt}}</span></div>
+      <a href="/logout" class="btn btn-ghost btn-xs btn-block mt-2 inline-flex items-center justify-center gap-1" style="color:var(--text-muted)"><svg class="icon" style="width:12px;height:12px"><use href="#icon-log-out"></use></svg>退出</a>
     </div>
   </aside>{{end}}
 
   <div class="flex-1 min-w-0 flex flex-col min-h-screen">
-    <header class="h-14 sticky top-0 bg-base-100 border-b border-base-300 flex items-center justify-between px-6 z-10">
+    <header class="h-14 sticky top-0 flex items-center justify-between px-6 z-10" style="background-color:var(--bg-surface);border-bottom:1px solid var(--border-base)">
       <div class="flex items-center gap-3 min-w-0">
-        {{if .User}}<button id="nav-toggle" class="btn btn-ghost btn-circle btn-sm lg:hidden" aria-label="菜单">☰</button>{{end}}
-        <span class="text-sm truncate"><span>发卡站</span> <span class="text-base-content/30">/</span> <span class="text-base-content/50">{{.Title}}</span></span>
+        {{if .User}}<button id="nav-toggle" class="btn btn-ghost btn-circle btn-sm lg:hidden" aria-label="菜单" style="color:var(--text-muted)"><svg class="icon"><use href="#icon-menu"></use></svg></button>{{end}}
+        <span class="text-sm truncate"><span style="color:var(--text-strong)">发卡站</span> <span style="color:var(--text-faint)">/</span> <span style="color:var(--text-muted)">{{.Title}}</span></span>
       </div>
       <div class="flex items-center gap-2 shrink-0">
-        {{if .User}}<span class="badge badge-success badge-outline badge-lg">余额 {{.User.BalanceFmt}}</span>{{end}}
-        <button class="btn btn-ghost btn-circle btn-sm" data-theme-toggle aria-label="切换主题">🌓</button>
+        {{if .User}}<span class="badge badge-success badge-outline badge-lg inline-flex items-center gap-1"><svg class="icon" style="width:12px;height:12px"><use href="#icon-wallet"></use></svg>{{.User.BalanceFmt}}</span>{{end}}
+        <button class="btn btn-ghost btn-circle btn-sm" data-theme-toggle aria-label="切换主题" style="color:var(--text-muted)">
+          <svg class="icon theme-icon-light"><use href="#icon-sun"></use></svg>
+          <svg class="icon theme-icon-dark" style="display:none"><use href="#icon-moon"></use></svg>
+        </button>
       </div>
     </header>
-    <main class="flex-1 bg-base-200 p-6"><div class="max-w-6xl mx-auto">{{template "content" .}}</div></main>
+    <main class="flex-1 p-4 sm:p-6"><div class="max-w-6xl mx-auto">{{template "content" .}}</div></main>
   </div>
 </div>
 {{if .User}}<div id="mobile-drawer" class="hidden fixed inset-0 z-40 lg:hidden">
   <div class="absolute inset-0 bg-black/40" data-drawer-close></div>
-  <aside class="absolute left-0 top-0 h-full w-64 bg-base-100 border-r border-base-300 flex flex-col">
-    <div class="h-14 flex items-center justify-between px-5 border-b border-base-300">
-      <span class="font-bold text-lg">🎫 发卡站</span>
-      <button class="btn btn-ghost btn-circle btn-sm" data-drawer-close aria-label="关闭">✕</button>
+  <aside class="absolute left-0 top-0 h-full w-64 flex flex-col" style="background-color:var(--bg-surface);border-right:1px solid var(--border-base)">
+    <div class="h-14 flex items-center justify-between px-5" style="border-bottom:1px solid var(--border-base)">
+      <span class="font-bold text-lg inline-flex items-center gap-2"><svg class="icon" style="width:20px;height:20px;color:var(--brand-solid)"><use href="#icon-ticket"></use></svg>发卡站</span>
+      <button class="btn btn-ghost btn-circle btn-sm" data-drawer-close aria-label="关闭" style="color:var(--text-muted)"><svg class="icon"><use href="#icon-x"></use></svg></button>
     </div>
     <nav class="flex flex-col py-2 flex-1 overflow-y-auto">
       {{$t := .Title}}
-      <a href="/" class="h-11 flex items-center gap-3 px-5 border-l-4 {{if eq $t "概览"}}bg-base-200 text-primary font-semibold border-primary{{else}}text-base-content/70 hover:bg-base-200 border-transparent{{end}}">📊 概览</a>
-      <a href="/buy" class="h-11 flex items-center gap-3 px-5 border-l-4 {{if eq $t "购买"}}bg-base-200 text-primary font-semibold border-primary{{else}}text-base-content/70 hover:bg-base-200 border-transparent{{end}}">🛒 买码</a>
-      <a href="/recharge" class="h-11 flex items-center gap-3 px-5 border-l-4 {{if eq $t "充值"}}bg-base-200 text-primary font-semibold border-primary{{else}}text-base-content/70 hover:bg-base-200 border-transparent{{end}}">💰 充值</a>
-      <a href="/orders" class="h-11 flex items-center gap-3 px-5 border-l-4 {{if eq $t "订单"}}bg-base-200 text-primary font-semibold border-primary{{else}}text-base-content/70 hover:bg-base-200 border-transparent{{end}}">📦 订单</a>
+      {{template "navitem" dict "Match" "概览" "Href" "/" "Icon" "dashboard" "Label" "概览" "T" $t}}
+      {{template "navitem" dict "Match" "购买" "Href" "/buy" "Icon" "cart" "Label" "买码" "T" $t}}
+      {{template "navitem" dict "Match" "充值" "Href" "/recharge" "Icon" "wallet" "Label" "充值" "T" $t}}
+      {{template "navitem" dict "Match" "订单" "Href" "/orders" "Icon" "package" "Label" "订单" "T" $t}}
       {{if eq .User.Role "admin"}}
-      <div class="text-xs text-base-content/40 px-5 mt-3 mb-1 uppercase tracking-wide">管理</div>
-      <a href="/admin/users" class="h-11 flex items-center gap-3 px-5 border-l-4 {{if eq $t "用户管理"}}bg-base-200 text-primary font-semibold border-primary{{else}}text-base-content/70 hover:bg-base-200 border-transparent{{end}}">👤 用户</a>
-      <a href="/admin/create" class="h-11 flex items-center gap-3 px-5 border-l-4 {{if eq $t "建账户"}}bg-base-200 text-primary font-semibold border-primary{{else}}text-base-content/70 hover:bg-base-200 border-transparent{{end}}">➕ 建账户</a>
-      <a href="/admin/config" class="h-11 flex items-center gap-3 px-5 border-l-4 {{if eq $t "配置"}}bg-base-200 text-primary font-semibold border-primary{{else}}text-base-content/70 hover:bg-base-200 border-transparent{{end}}">⚙️ 配置</a>
-      <a href="/admin/merchants" class="h-11 flex items-center gap-3 px-5 border-l-4 {{if eq $t "商户管理"}}bg-base-200 text-primary font-semibold border-primary{{else}}text-base-content/70 hover:bg-base-200 border-transparent{{end}}">🏪 商户管理</a>
-      <a href="/admin/docs" class="h-11 flex items-center gap-3 px-5 border-l-4 {{if eq $t "支付配置文档"}}bg-base-200 text-primary font-semibold border-primary{{else}}text-base-content/70 hover:bg-base-200 border-transparent{{end}}">📖 支付文档</a>
+      <div class="text-xs px-5 mt-3 mb-1 uppercase tracking-wide" style="color:var(--text-faint)">管理</div>
+      {{template "navitem" dict "Match" "用户管理" "Href" "/admin/users" "Icon" "users" "Label" "用户" "T" $t}}
+      {{template "navitem" dict "Match" "建账户" "Href" "/admin/create" "Icon" "user-plus" "Label" "建账户" "T" $t}}
+      {{template "navitem" dict "Match" "配置" "Href" "/admin/config" "Icon" "settings" "Label" "配置" "T" $t}}
+      {{template "navitem" dict "Match" "商户管理" "Href" "/admin/merchants" "Icon" "store" "Label" "商户管理" "T" $t}}
+      {{template "navitem" dict "Match" "支付配置文档" "Href" "/admin/docs" "Icon" "book" "Label" "支付文档" "T" $t}}
       {{end}}
     </nav>
-    <div class="mt-auto m-3 p-3 rounded-xl bg-base-200">
-      <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-full bg-primary text-primary-content grid place-items-center font-semibold shrink-0">{{slice .User.Email 0 1}}</div>
-        <div class="min-w-0">
-          <div class="text-sm font-medium truncate">{{.User.Email}}</div>
-          <div class="mt-0.5">{{if eq .User.Role "admin"}}<span class="badge badge-success badge-xs">管理员</span>{{else}}<span class="badge badge-ghost badge-xs">普通用户</span>{{end}}</div>
-        </div>
-      </div>
-      <div class="text-xs text-base-content/60 mt-2">余额 <span class="text-base-content font-semibold">{{.User.BalanceFmt}}</span></div>
-      <a href="/logout" class="btn btn-ghost btn-xs btn-block mt-2">退出</a>
-    </div>
   </aside>
 </div>{{end}}
 <script nonce="{{.Nonce}}">
@@ -93,13 +87,18 @@
   var d = document.documentElement;
   var saved = localStorage.getItem('theme');
   if (saved) d.setAttribute('data-theme', saved);
+  function syncThemeIcon(){ var dark = d.getAttribute('data-theme')==='dark';
+    document.querySelectorAll('.theme-icon-light').forEach(function(e){e.style.display = dark ? 'none' : '';});
+    document.querySelectorAll('.theme-icon-dark').forEach(function(e){e.style.display = dark ? '' : 'none';});
+  }
+  syncThemeIcon();
   document.querySelectorAll('[data-theme-toggle]').forEach(function(el){
     el.addEventListener('click', function(){
       var nt = d.getAttribute('data-theme') === 'dark' ? 'emerald' : 'dark';
-      d.setAttribute('data-theme', nt); localStorage.setItem('theme', nt);
+      d.setAttribute('data-theme', nt); localStorage.setItem('theme', nt); syncThemeIcon();
     });
   });
-  function flash(el){ var o = el.textContent; el.textContent = '已复制 ✓'; setTimeout(function(){ el.textContent = o; }, 900); }
+  function flash(el){ var o = el.innerHTML; el.innerHTML = '已复制 <svg class="icon" style="width:12px;height:12px;color:var(--success-text)"><use href="#icon-check"></use></svg>'; setTimeout(function(){ el.innerHTML = o; }, 900); }
   document.body.addEventListener('click', function(e){
     var c = e.target.closest('[data-copy]'); if (c) { navigator.clipboard.writeText(c.getAttribute('data-copy')); flash(c); return; }
     var a = e.target.closest('[data-copy-all]'); if (a) { navigator.clipboard.writeText(a.getAttribute('data-copy-all')); flash(a); return; }
@@ -113,4 +112,12 @@
   }
 })();
 </script>
+<style>
+/* navitem 状态：active = 主色填充，inactive = hover 出 soft 背景 */
+.navitem-active{background-color:var(--bg-subtle);color:var(--brand-solid);font-weight:600;border-color:var(--brand-solid)!important}
+.navitem-inactive{color:var(--text-muted);border-color:transparent;transition:background-color .15s ease}
+.navitem-inactive:hover{background-color:var(--bg-subtle)}
+.navitem-inactive:hover{color:var(--text-strong)}
+</style>
 </body></html>{{end}}
+{{define "navitem"}}<a href="{{.Href}}" class="h-11 flex items-center gap-3 px-5 border-l-4{{if eq .T .Match}} navitem-active{{else}} navitem-inactive{{end}}"><svg class="icon"><use href="#icon-{{.Icon}}"></use></svg>{{.Label}}</a>{{end}}

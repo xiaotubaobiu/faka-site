@@ -1,106 +1,106 @@
 {{define "content"}}
-<h2 class="text-xl font-semibold mb-3">站点配置</h2>
-{{if .Data.msg}}<div class="alert alert-success mb-3"><span>{{.Data.msg}}</span></div>{{end}}
-{{if .Data.keyMsg}}<div class="alert alert-info mb-3"><span>{{.Data.keyMsg}}</span></div>{{end}}
-{{if .Data.cfgErr}}<div class="alert alert-error mb-3"><span>{{.Data.cfgErr}}</span></div>{{end}}
-{{if .Data.testErr}}<div class="alert alert-error mb-3"><span>{{.Data.testErr}}</span></div>{{end}}
-{{if .Data.testOK}}<div class="alert alert-success mb-3"><span>连接正常,且为管理员 ✓</span></div>{{end}}
+<h2 class="text-xl font-bold mb-4 flex items-center gap-2" style="color:var(--text-strong)"><svg class="icon" style="width:20px;height:20px;color:var(--brand-solid)"><use href="#icon-settings"></use></svg>站点配置</h2>
+{{if .Data.msg}}<div class="alert alert-success mb-3 px-4 py-3 flex items-center gap-2 text-sm"><svg class="icon shrink-0"><use href="#icon-check"></use></svg><span>{{.Data.msg}}</span></div>{{end}}
+{{if .Data.keyMsg}}<div class="alert alert-warning mb-3 px-4 py-3 flex items-center gap-2 text-sm"><svg class="icon shrink-0"><use href="#icon-info"></use></svg><span>{{.Data.keyMsg}}</span></div>{{end}}
+{{if .Data.cfgErr}}<div class="alert alert-error mb-3 px-4 py-3 flex items-center gap-2 text-sm"><svg class="icon shrink-0"><use href="#icon-alert"></use></svg><span>{{.Data.cfgErr}}</span></div>{{end}}
+{{if .Data.testErr}}<div class="alert alert-error mb-3 px-4 py-3 flex items-center gap-2 text-sm"><svg class="icon shrink-0"><use href="#icon-alert"></use></svg><span>{{.Data.testErr}}</span></div>{{end}}
+{{if .Data.testOK}}<div class="alert alert-success mb-3 px-4 py-3 flex items-center gap-2 text-sm"><svg class="icon shrink-0"><use href="#icon-check"></use></svg><span>连接正常，且为管理员</span></div>{{end}}
 
-<div class="flex gap-2 mb-3">
-  <a href="/admin/docs" class="btn btn-sm btn-ghost">📖 支付配置文档</a>
-  <a href="/admin/merchants" class="btn btn-sm btn-ghost">🏪 商户管理</a>
+<div class="flex gap-2 mb-4">
+  <a href="/admin/docs" class="btn-secondary inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium"><svg class="icon" style="width:14px;height:14px"><use href="#icon-book"></use></svg>支付配置文档</a>
+  <a href="/admin/merchants" class="btn-secondary inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium"><svg class="icon" style="width:14px;height:14px"><use href="#icon-store"></use></svg>商户管理</a>
 </div>
 
-<form method="post" action="/admin/config" class="card bg-base-100 shadow border border-base-200 p-4 grid gap-3">
+<form method="post" action="/admin/config" class="card-warm p-6 grid gap-5">
   <input name="csrf" type="hidden" value="{{.CSRF}}">
 
-  <fieldset class="border border-base-200 rounded p-3 grid gap-2">
-    <legend class="text-sm opacity-70 px-1">NewAPI</legend>
-    <label class="form-control"><span class="label-text">网址</span><input name="newapi_base_url" value="{{.Data.cfg.BaseURL}}" class="input input-bordered input-sm"></label>
-    <label class="form-control"><span class="label-text">系统访问令牌</span><input name="newapi_access_token" placeholder="留空=不修改" class="input input-bordered input-sm"></label>
-    <label class="form-control"><span class="label-text">管理员用户ID</span><input name="newapi_admin_user_id" value="{{.Data.cfg.AdminUserID}}" class="input input-bordered input-sm"></label>
+  <fieldset class="rounded-xl p-4 grid gap-3" style="border:1px solid var(--border-base)">
+    <legend class="text-xs font-semibold uppercase tracking-wide px-2" style="color:var(--brand-solid)">NewAPI</legend>
+    <label class="form-control block"><span class="text-xs font-medium block mb-1.5" style="color:var(--text-muted)">网址</span><input name="newapi_base_url" value="{{.Data.cfg.BaseURL}}" class="input-warm w-full px-3 py-2 text-sm"></label>
+    <label class="form-control block"><span class="text-xs font-medium block mb-1.5" style="color:var(--text-muted)">系统访问令牌</span><input name="newapi_access_token" placeholder="留空=不修改" class="input-warm w-full px-3 py-2 text-sm"></label>
+    <label class="form-control block"><span class="text-xs font-medium block mb-1.5" style="color:var(--text-muted)">管理员用户ID</span><input name="newapi_admin_user_id" value="{{.Data.cfg.AdminUserID}}" class="input-warm w-full px-3 py-2 text-sm"></label>
   </fieldset>
 
-  <fieldset class="border border-base-200 rounded p-3 grid gap-2">
-    <legend class="text-sm opacity-70 px-1">SMTP 邮件</legend>
-    <label class="form-control"><span class="label-text">主机</span><input name="smtp_host" value="{{.Data.cfg.SMTPHost}}" class="input input-bordered input-sm"></label>
-    <label class="form-control"><span class="label-text">端口</span><input name="smtp_port" value="{{.Data.cfg.SMTPPort}}" class="input input-bordered input-sm"></label>
-    <label class="form-control"><span class="label-text">用户</span><input name="smtp_user" value="{{.Data.cfg.SMTPUser}}" class="input input-bordered input-sm"></label>
-    <label class="form-control"><span class="label-text">密码</span><input name="smtp_pass" type="password" placeholder="留空=不修改" class="input input-bordered input-sm"></label>
-    <label class="form-control"><span class="label-text">发件人</span><input name="smtp_from" value="{{.Data.cfg.SMTPFrom}}" class="input input-bordered input-sm"></label>
+  <fieldset class="rounded-xl p-4 grid gap-3" style="border:1px solid var(--border-base)">
+    <legend class="text-xs font-semibold uppercase tracking-wide px-2" style="color:var(--brand-solid)">SMTP 邮件</legend>
+    <label class="form-control block"><span class="text-xs font-medium block mb-1.5" style="color:var(--text-muted)">主机</span><input name="smtp_host" value="{{.Data.cfg.SMTPHost}}" class="input-warm w-full px-3 py-2 text-sm"></label>
+    <label class="form-control block"><span class="text-xs font-medium block mb-1.5" style="color:var(--text-muted)">端口</span><input name="smtp_port" value="{{.Data.cfg.SMTPPort}}" class="input-warm w-full px-3 py-2 text-sm"></label>
+    <label class="form-control block"><span class="text-xs font-medium block mb-1.5" style="color:var(--text-muted)">用户</span><input name="smtp_user" value="{{.Data.cfg.SMTPUser}}" class="input-warm w-full px-3 py-2 text-sm"></label>
+    <label class="form-control block"><span class="text-xs font-medium block mb-1.5" style="color:var(--text-muted)">密码</span><input name="smtp_pass" type="password" placeholder="留空=不修改" class="input-warm w-full px-3 py-2 text-sm"></label>
+    <label class="form-control block"><span class="text-xs font-medium block mb-1.5" style="color:var(--text-muted)">发件人</span><input name="smtp_from" value="{{.Data.cfg.SMTPFrom}}" class="input-warm w-full px-3 py-2 text-sm"></label>
   </fieldset>
 
-  <fieldset class="border border-base-200 rounded p-3 grid gap-2">
-    <legend class="text-sm opacity-70 px-1">充值设置</legend>
-    <label class="form-control"><span class="label-text">公网回调基地址(官方支付异步通知,必须 https)</span><input name="recharge_notify_base" value="{{.Data.cfg.RechargeNotifyBase}}" placeholder="https://faka.example.com" class="input input-bordered input-sm"></label>
-    <label class="form-control"><span class="label-text">汇率(每 ¥ = 多少 quota,默认 500000)</span><input name="recharge_rate" value="{{.Data.cfg.RechargeRate}}" class="input input-bordered input-sm"></label>
-    <label class="form-control"><span class="label-text">自身充值商户 pid(在「商户管理」里建的 pid 之一)</span><input name="recharge_internal_pid" value="{{.Data.cfg.RechargeInternalPID}}" class="input input-bordered input-sm"></label>
+  <fieldset class="rounded-xl p-4 grid gap-3" style="border:1px solid var(--border-base)">
+    <legend class="text-xs font-semibold uppercase tracking-wide px-2" style="color:var(--brand-solid)">充值设置</legend>
+    <label class="form-control block"><span class="text-xs font-medium block mb-1.5" style="color:var(--text-muted)">公网回调基地址（官方支付异步通知，必须 https）</span><input name="recharge_notify_base" value="{{.Data.cfg.RechargeNotifyBase}}" placeholder="https://faka.example.com" class="input-warm w-full px-3 py-2 text-sm"></label>
+    <label class="form-control block"><span class="text-xs font-medium block mb-1.5" style="color:var(--text-muted)">汇率（每 ¥ = 多少 quota，默认 500000）</span><input name="recharge_rate" value="{{.Data.cfg.RechargeRate}}" class="input-warm w-full px-3 py-2 text-sm"></label>
+    <label class="form-control block"><span class="text-xs font-medium block mb-1.5" style="color:var(--text-muted)">自身充值商户 pid（在「商户管理」里建的 pid 之一）</span><input name="recharge_internal_pid" value="{{.Data.cfg.RechargeInternalPID}}" class="input-warm w-full px-3 py-2 text-sm"></label>
   </fieldset>
 
-  <fieldset class="border border-base-200 rounded p-3 grid gap-2">
-    <legend class="text-sm opacity-70 px-1">epay 网关管理员(Basic-Auth,用于 /epay/admin)</legend>
-    <label class="form-control"><span class="label-text">用户名</span><input name="epay_admin_user" value="{{.Data.cfg.EpayAdminUser}}" class="input input-bordered input-sm"></label>
-    <label class="form-control"><span class="label-text">密码(留空不改)</span><input name="epay_admin_pass" type="password" placeholder="留空=不修改" class="input input-bordered input-sm"></label>
-    <label class="form-control"><span class="label-text">订单超时(分钟)</span><input name="epay_order_timeout" value="{{.Data.cfg.EpayOrderTimeout}}" class="input input-bordered input-sm"></label>
-    <p class="text-xs text-base-content/50">商户(pid/key)请在「商户管理」页面维护,不要手敲。</p>
+  <fieldset class="rounded-xl p-4 grid gap-3" style="border:1px solid var(--border-base)">
+    <legend class="text-xs font-semibold uppercase tracking-wide px-2" style="color:var(--brand-solid)">epay 网关管理员（Basic-Auth，用于 /epay/admin）</legend>
+    <label class="form-control block"><span class="text-xs font-medium block mb-1.5" style="color:var(--text-muted)">用户名</span><input name="epay_admin_user" value="{{.Data.cfg.EpayAdminUser}}" class="input-warm w-full px-3 py-2 text-sm"></label>
+    <label class="form-control block"><span class="text-xs font-medium block mb-1.5" style="color:var(--text-muted)">密码（留空不改）</span><input name="epay_admin_pass" type="password" placeholder="留空=不修改" class="input-warm w-full px-3 py-2 text-sm"></label>
+    <label class="form-control block"><span class="text-xs font-medium block mb-1.5" style="color:var(--text-muted)">订单超时（分钟）</span><input name="epay_order_timeout" value="{{.Data.cfg.EpayOrderTimeout}}" class="input-warm w-full px-3 py-2 text-sm"></label>
+    <p class="text-xs" style="color:var(--text-faint)">商户（pid/key）请在「商户管理」页面维护，不要手敲。</p>
   </fieldset>
 
-  <button class="btn btn-primary">保存</button>
+  <button class="btn-brand py-2.5 text-sm font-semibold">保存配置</button>
 </form>
 
-<form method="post" action="/admin/config/test" class="mt-3"><input name="csrf" type="hidden" value="{{.CSRF}}"><button class="btn btn-ghost">测试 NewAPI 连接</button></form>
+<form method="post" action="/admin/config/test" class="mt-3"><input name="csrf" type="hidden" value="{{.CSRF}}"><button class="btn-secondary px-4 py-2 text-sm font-medium inline-flex items-center gap-1.5"><svg class="icon" style="width:14px;height:14px"><use href="#icon-shield"></use></svg>测试 NewAPI 连接</button></form>
 
-<!-- 支付渠道配置:非敏感标识在这里,密钥走下方文件上传 -->
-<div class="card bg-base-100 shadow border border-base-200 p-4 grid gap-3 mt-4">
-  <h3 class="text-base font-semibold">支付渠道</h3>
+<!-- 支付渠道配置：非敏感标识在这里，密钥走下方文件上传 -->
+<div class="card-warm p-6 grid gap-5 mt-4">
+  <h3 class="text-base font-bold flex items-center gap-2" style="color:var(--text-strong)"><svg class="icon" style="width:18px;height:18px;color:var(--brand-solid)"><use href="#icon-credit-card"></use></svg>支付渠道</h3>
 
-  <form method="post" action="/admin/config" class="grid gap-2">
+  <form method="post" action="/admin/config" class="grid gap-4">
     <input name="csrf" type="hidden" value="{{.CSRF}}">
-    <fieldset class="border border-base-200 rounded p-3 grid gap-2">
-      <legend class="text-sm opacity-70 px-1">支付宝官方(当面付)— 标识</legend>
-      <label class="form-control"><span class="label-text">应用 AppID</span><input name="alipay_appid" value="{{.Data.cfg.AlipayAppID}}" class="input input-bordered input-sm"></label>
-      <label class="form-control"><span class="label-text">网关(留空=默认线上)</span><input name="alipay_gateway" value="{{.Data.cfg.AlipayGateway}}" placeholder="https://openapi.alipay.com/gateway.do" class="input input-bordered input-sm"></label>
-      <label class="form-control"><span class="label-text">沙箱</span>
-        <select name="alipay_sandbox" class="select select-bordered select-sm">
-          <option value="0" {{if not .Data.cfg.AlipaySandbox}}selected{{end}}>否(线上)</option>
-          <option value="1" {{if .Data.cfg.AlipaySandbox}}selected{{end}}>是(沙箱)</option>
+    <fieldset class="rounded-xl p-4 grid gap-3" style="border:1px solid var(--border-base)">
+      <legend class="text-xs font-semibold uppercase tracking-wide px-2" style="color:var(--brand-solid)">支付宝官方（当面付）— 标识</legend>
+      <label class="form-control block"><span class="text-xs font-medium block mb-1.5" style="color:var(--text-muted)">应用 AppID</span><input name="alipay_appid" value="{{.Data.cfg.AlipayAppID}}" class="input-warm w-full px-3 py-2 text-sm"></label>
+      <label class="form-control block"><span class="text-xs font-medium block mb-1.5" style="color:var(--text-muted)">网关（留空=默认线上）</span><input name="alipay_gateway" value="{{.Data.cfg.AlipayGateway}}" placeholder="https://openapi.alipay.com/gateway.do" class="input-warm w-full px-3 py-2 text-sm"></label>
+      <label class="form-control block"><span class="text-xs font-medium block mb-1.5" style="color:var(--text-muted)">沙箱</span>
+        <select name="alipay_sandbox" class="input-warm px-3 py-2 text-sm">
+          <option value="0" {{if not .Data.cfg.AlipaySandbox}}selected{{end}}>否（线上）</option>
+          <option value="1" {{if .Data.cfg.AlipaySandbox}}selected{{end}}>是（沙箱）</option>
         </select>
       </label>
     </fieldset>
 
-    <fieldset class="border border-base-200 rounded p-3 grid gap-2">
-      <legend class="text-sm opacity-70 px-1">微信支付官方(v3 Native)— 标识</legend>
-      <label class="form-control"><span class="label-text">AppID</span><input name="wxpay_appid" value="{{.Data.cfg.WxpayAppID}}" class="input input-bordered input-sm"></label>
-      <label class="form-control"><span class="label-text">商户号 MchID</span><input name="wxpay_mchid" value="{{.Data.cfg.WxpayMchID}}" class="input input-bordered input-sm"></label>
-      <label class="form-control"><span class="label-text">商户证书序列号</span><input name="wxpay_serial_no" value="{{.Data.cfg.WxpayMchSerialNo}}" class="input input-bordered input-sm"></label>
+    <fieldset class="rounded-xl p-4 grid gap-3" style="border:1px solid var(--border-base)">
+      <legend class="text-xs font-semibold uppercase tracking-wide px-2" style="color:var(--brand-solid)">微信支付官方（v3 Native）— 标识</legend>
+      <label class="form-control block"><span class="text-xs font-medium block mb-1.5" style="color:var(--text-muted)">AppID</span><input name="wxpay_appid" value="{{.Data.cfg.WxpayAppID}}" class="input-warm w-full px-3 py-2 text-sm"></label>
+      <label class="form-control block"><span class="text-xs font-medium block mb-1.5" style="color:var(--text-muted)">商户号 MchID</span><input name="wxpay_mchid" value="{{.Data.cfg.WxpayMchID}}" class="input-warm w-full px-3 py-2 text-sm"></label>
+      <label class="form-control block"><span class="text-xs font-medium block mb-1.5" style="color:var(--text-muted)">商户证书序列号</span><input name="wxpay_serial_no" value="{{.Data.cfg.WxpayMchSerialNo}}" class="input-warm w-full px-3 py-2 text-sm"></label>
     </fieldset>
-    <button class="btn btn-primary btn-sm self-start">保存支付标识</button>
+    <button class="btn-brand px-4 py-2 text-sm font-semibold self-start">保存支付标识</button>
   </form>
 
-  <!-- 密钥文件管理:每个文件显示状态 + 上传/删除 -->
-  <fieldset class="border border-base-200 rounded p-3 grid gap-3">
-    <legend class="text-sm opacity-70 px-1">密钥文件(不进数据库,存于服务器 keys/ 目录)</legend>
+  <!-- 密钥文件管理：每个文件显示状态 + 上传/删除 -->
+  <fieldset class="rounded-xl p-4 grid gap-3" style="border:1px solid var(--border-base)">
+    <legend class="text-xs font-semibold uppercase tracking-wide px-2" style="color:var(--brand-solid)">密钥文件（不进数据库，存于服务器 keys/ 目录）</legend>
     {{range .Data.keys}}
-    <div class="flex items-center gap-3 flex-wrap">
+    <div class="flex items-center gap-3 flex-wrap py-2" style="border-bottom:1px solid var(--border-base)">
       <div class="flex-1 min-w-40">
-        <div class="text-sm font-medium">{{.Label}} <code class="text-xs opacity-60">{{.Name}}</code></div>
-        <div class="text-xs opacity-50">{{.Description}}</div>
+        <div class="text-sm font-medium inline-flex items-center gap-1.5" style="color:var(--text-strong)"><svg class="icon" style="width:14px;height:14px;color:var(--brand-solid)"><use href="#icon-key"></use></svg>{{.Label}} <code class="text-xs" style="color:var(--text-faint)">{{.Name}}</code></div>
+        <div class="text-xs mt-0.5" style="color:var(--text-faint)">{{.Description}}</div>
       </div>
       {{if .Present}}
-      <span class="badge badge-success badge-sm">已上传</span>
+      <span class="badge badge-success badge-sm px-2 py-0.5 rounded-full text-xs">已上传</span>
       <form method="post" action="/admin/config/key-delete" class="inline">
         <input name="csrf" type="hidden" value="{{$.CSRF}}">
         <input name="name" type="hidden" value="{{.Name}}">
-        <button class="btn btn-xs btn-ghost text-error" onclick="return confirm('删除 {{.Name}}?该渠道将无法使用。')">删除</button>
+        <button class="btn btn-xs btn-ghost" style="color:var(--error-text)" onclick="return confirm('删除 {{.Name}}？该渠道将无法使用。')">删除</button>
       </form>
       {{else}}
-      <span class="badge badge-ghost badge-sm">未上传</span>
+      <span class="badge badge-neutral badge-sm px-2 py-0.5 rounded-full text-xs">未上传</span>
       {{end}}
       <form method="post" action="/admin/config/key-upload" enctype="multipart/form-data" class="inline flex items-center gap-1">
         <input name="csrf" type="hidden" value="{{$.CSRF}}">
         <input name="name" type="hidden" value="{{.Name}}">
-        <input name="file" type="file" class="file-input file-input-xs file-input-bordered w-48" required>
-        <button class="btn btn-xs btn-primary">上传</button>
+        <input name="file" type="file" class="text-xs" style="color:var(--text-muted)" required>
+        <button class="btn-brand px-3 py-1 text-xs font-semibold inline-flex items-center gap-1"><svg class="icon" style="width:12px;height:12px"><use href="#icon-upload"></use></svg>上传</button>
       </form>
     </div>
     {{end}}

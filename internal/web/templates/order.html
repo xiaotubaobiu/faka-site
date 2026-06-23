@@ -1,10 +1,14 @@
 {{define "content"}}
-<h2 class="text-xl font-semibold mb-1">订单 #{{.Data.order.ID}}</h2>
-<p class="opacity-70 mb-3">{{.Data.order.Status}} · 每 {{usd .Data.order.QuotaPerCode}} · 生成 {{.Data.order.SucceededCount}}{{if gt .Data.order.RefundedAmount 0}} · 退款 {{usd .Data.order.RefundedAmount}}{{end}}</p>
+<a href="/orders" class="inline-flex items-center gap-1 text-sm mb-3 hover:underline" style="color:var(--text-muted)"><svg class="icon" style="width:14px;height:14px"><use href="#icon-arrow-left"></use></svg>返回订单列表</a>
+<h2 class="text-xl font-bold mb-1" style="color:var(--text-strong)">订单 #{{.Data.order.ID}}</h2>
+<p class="text-sm mb-4 flex flex-wrap items-center gap-2" style="color:var(--text-muted)">
+  <span class="badge {{if eq .Data.order.Status "completed"}}badge-success{{else if eq .Data.order.Status "partial"}}badge-warning{{else}}badge-error{{end}} px-2.5 py-1 rounded-full text-xs font-semibold">{{.Data.order.Status}}</span>
+  <span>· 每 {{usd .Data.order.QuotaPerCode}} · 生成 {{.Data.order.SucceededCount}}{{if gt .Data.order.RefundedAmount 0}} · 退款 {{usd .Data.order.RefundedAmount}}{{end}}</span>
+</p>
 {{if .Data.codes}}
-<div class="card bg-base-100 shadow border border-base-200"><div class="card-body">
-  <div class="flex flex-wrap gap-1.5">{{range .Data.codes}}<span class="kbd kbd-sm cursor-pointer" data-copy="{{.}}">{{.}}</span>{{end}}</div>
-  <button class="btn btn-ghost btn-sm mt-2" data-copy-all="{{joinCodes .Data.codes}}">复制全部</button>
-</div></div>
-{{else}}<p class="opacity-60">无码</p>{{end}}
+<div class="card-warm p-5">
+  <div class="flex flex-wrap gap-1.5">{{range .Data.codes}}<span class="kbd kbd-sm cursor-pointer px-2 py-1 rounded-md text-xs font-mono" style="background:var(--bg-subtle);color:var(--brand-solid);border:1px solid var(--border-base)" data-copy="{{.}}">{{.}}</span>{{end}}</div>
+  <button class="btn btn-ghost btn-sm mt-3 inline-flex items-center gap-1" style="color:var(--text-muted)" data-copy-all="{{joinCodes .Data.codes}}"><svg class="icon" style="width:12px;height:12px"><use href="#icon-copy"></use></svg>复制全部</button>
+</div>
+{{else}}<p style="color:var(--text-faint)">无码</p>{{end}}
 {{end}}

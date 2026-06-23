@@ -1,41 +1,31 @@
 {{define "content"}}
 <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
-  <div class="card bg-base-100 border border-base-300 rounded-2xl shadow-sm">
-    <div class="card-body p-4">
-      <div class="flex items-center gap-2 text-base-content/50 text-xs font-medium uppercase tracking-wide"><span>💰</span><span>当前余额</span></div>
-      <div class="text-2xl font-bold text-primary mt-1">{{usd .Data.Balance}}</div>
-    </div>
+  <div class="card-warm card-hover p-4">
+    <div class="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide" style="color:var(--text-muted)"><svg class="icon" style="width:14px;height:14px"><use href="#icon-wallet"></use></svg><span>当前余额</span></div>
+    <div class="text-2xl font-bold mt-1" style="color:var(--brand-solid)">{{usd .Data.Balance}}</div>
   </div>
-  <div class="card bg-base-100 border border-base-300 rounded-2xl shadow-sm">
-    <div class="card-body p-4">
-      <div class="flex items-center gap-2 text-base-content/50 text-xs font-medium uppercase tracking-wide"><span>📦</span><span>总订单</span></div>
-      <div class="text-2xl font-bold mt-1">{{.Data.OrderCount}}</div>
-    </div>
+  <div class="card-warm card-hover p-4">
+    <div class="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide" style="color:var(--text-muted)"><svg class="icon" style="width:14px;height:14px"><use href="#icon-package"></use></svg><span>总订单</span></div>
+    <div class="text-2xl font-bold mt-1" style="color:var(--text-strong)">{{.Data.OrderCount}}</div>
   </div>
-  <div class="card bg-base-100 border border-base-300 rounded-2xl shadow-sm">
-    <div class="card-body p-4">
-      <div class="flex items-center gap-2 text-base-content/50 text-xs font-medium uppercase tracking-wide"><span>📅</span><span>近30天消费</span></div>
-      <div class="text-2xl font-bold mt-1">{{usd .Data.MonthlyUsed}}</div>
-    </div>
+  <div class="card-warm card-hover p-4">
+    <div class="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide" style="color:var(--text-muted)"><svg class="icon" style="width:14px;height:14px"><use href="#icon-credit-card"></use></svg><span>近30天消费</span></div>
+    <div class="text-2xl font-bold mt-1" style="color:var(--text-strong)">{{usd .Data.MonthlyUsed}}</div>
   </div>
   {{if .Data.UserCount}}
-  <div class="card bg-base-100 border border-base-300 rounded-2xl shadow-sm">
-    <div class="card-body p-4">
-      <div class="flex items-center gap-2 text-base-content/50 text-xs font-medium uppercase tracking-wide"><span>👥</span><span>启用用户</span></div>
-      <div class="text-2xl font-bold mt-1">{{.Data.UserCount}}</div>
-    </div>
+  <div class="card-warm card-hover p-4">
+    <div class="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide" style="color:var(--text-muted)"><svg class="icon" style="width:14px;height:14px"><use href="#icon-users"></use></svg><span>启用用户</span></div>
+    <div class="text-2xl font-bold mt-1" style="color:var(--text-strong)">{{.Data.UserCount}}</div>
   </div>
   {{end}}
 </div>
 {{if .Data.UserCount}}
-<div class="card bg-base-100 border border-base-300 rounded-2xl shadow-sm mb-5">
-  <div class="card-body p-4 flex-row items-center justify-between">
-    <div class="flex items-center gap-2 text-sm text-base-content/60"><span>🏦</span><span>平台总余额</span></div>
-    <div class="text-lg font-bold">{{usd .Data.PlatformBalance}}</div>
-  </div>
+<div class="card-warm mb-5 p-4 flex items-center justify-between">
+  <div class="flex items-center gap-2 text-sm" style="color:var(--text-muted)"><svg class="icon" style="width:16px;height:16px"><use href="#icon-wallet"></use></svg><span>平台总余额</span></div>
+  <div class="text-lg font-bold" style="color:var(--text-strong)">{{usd .Data.PlatformBalance}}</div>
 </div>
 {{end}}
-<a href="/buy" class="btn btn-primary btn-block sm:btn-wide mb-5">＋ 购买兑换码</a>
-<h3 class="text-lg font-semibold mb-2">最近订单</h3>
+<a href="/buy" class="btn-brand inline-flex items-center justify-center gap-2 px-6 py-2.5 text-sm font-semibold mb-5"><svg class="icon" style="width:16px;height:16px"><use href="#icon-plus"></use></svg>购买兑换码</a>
+<h3 class="text-lg font-bold mb-3 flex items-center gap-2" style="color:var(--text-strong)"><svg class="icon" style="width:18px;height:18px;color:var(--brand-solid)"><use href="#icon-package"></use></svg>最近订单</h3>
 {{template "orders_list" .}}
 {{end}}
