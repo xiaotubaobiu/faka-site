@@ -1,64 +1,59 @@
 {{define "content"}}
-<h2 class="text-xl font-semibold mb-1">商户管理</h2>
-<p class="text-sm text-base-content/60 mb-4">这里管理对外 epay 协议的下游商户(pid + 通信密钥)。每行一个商户,密钥可自动生成或自定义。详见 <a href="/admin/docs" class="link">支付文档</a>。</p>
+<h2 class="text-xl font-bold mb-1 flex items-center gap-2" style="color:var(--text-strong)"><svg class="icon" style="width:20px;height:20px;color:var(--brand-solid)"><use href="#icon-store"></use></svg>商户管理</h2>
+<p class="text-sm mb-4" style="color:var(--text-muted)">这里管理对外 epay 协议的下游商户（pid + 通信密钥）。每行一个商户，密钥可自动生成或自定义。详见 <a href="/admin/docs" class="hover:underline" style="color:var(--brand-solid)">支付文档</a>。</p>
 
-{{if .Data.msg}}<div class="alert alert-info mb-3"><span>{{.Data.msg}}</span></div>{{end}}
+{{if .Data.msg}}<div class="alert alert-warning mb-4 px-4 py-3 flex items-center gap-2 text-sm"><svg class="icon shrink-0"><use href="#icon-info"></use></svg><span>{{.Data.msg}}</span></div>{{end}}
 
 <!-- 添加商户 -->
-<div class="card bg-base-100 border border-base-300 rounded-2xl shadow-sm mb-5">
-  <div class="card-body">
-    <h3 class="text-sm font-medium text-base-content/60">添加商户</h3>
-    <form method="post" action="/admin/merchants/add" class="flex flex-wrap items-end gap-3 mt-1">
-      <input name="csrf" type="hidden" value="{{.CSRF}}">
-      <label class="form-control flex-1 min-w-32">
-        <span class="label-text">PID(商户号,正整数)</span>
-        <input name="pid" type="number" min="1" placeholder="如 1001" class="input input-bordered input-sm" required>
-      </label>
-      <label class="form-control flex-1 min-w-48">
-        <span class="label-text">通信密钥(留空自动生成 32 位)</span>
-        <input name="key" placeholder="留空=自动生成" class="input input-bordered input-sm font-mono">
-      </label>
-      <button class="btn btn-sm btn-primary">添加</button>
-    </form>
-  </div>
+<div class="card-warm p-5 mb-5">
+  <h3 class="text-xs font-medium uppercase tracking-wide mb-3" style="color:var(--text-muted)">添加商户</h3>
+  <form method="post" action="/admin/merchants/add" class="flex flex-wrap items-end gap-3">
+    <input name="csrf" type="hidden" value="{{.CSRF}}">
+    <label class="form-control block flex-1 min-w-32">
+      <span class="text-xs font-medium block mb-1.5" style="color:var(--text-muted)">PID（商户号，正整数）</span>
+      <input name="pid" type="number" min="1" placeholder="如 1001" class="input-warm w-full px-3 py-2 text-sm" required>
+    </label>
+    <label class="form-control block flex-1 min-w-48">
+      <span class="text-xs font-medium block mb-1.5" style="color:var(--text-muted)">通信密钥（留空自动生成 32 位）</span>
+      <input name="key" placeholder="留空=自动生成" class="input-warm w-full px-3 py-2 text-sm font-mono">
+    </label>
+    <button class="btn-brand px-4 py-2 text-sm font-semibold inline-flex items-center gap-1"><svg class="icon" style="width:14px;height:14px"><use href="#icon-plus"></use></svg>添加</button>
+  </form>
 </div>
 
 <!-- 商户列表 -->
 {{if .Data.merchants}}
 <div class="grid gap-3">
   {{range .Data.merchants}}
-  <div class="card bg-base-100 border border-base-300 rounded-2xl shadow-sm">
-    <div class="card-body flex-row items-center gap-4 flex-wrap p-4">
-      <div class="flex flex-col">
-        <span class="text-xs text-base-content/50">PID</span>
-        <span class="text-lg font-bold font-mono">{{.PID}}</span>
-      </div>
-      <div class="flex-1 min-w-48">
-        <span class="text-xs text-base-content/50">通信密钥</span>
-        <div class="flex items-center gap-1">
-          <code class="text-sm font-mono bg-base-200 px-2 py-1 rounded flex-1 truncate" id="key-{{.PID}}">{{.Key}}</code>
-          <button class="btn btn-xs btn-ghost" data-copy="{{.Key}}">复制</button>
-        </div>
-      </div>
-      <form method="post" action="/admin/merchants/reset-key" class="inline" onsubmit="return confirm('重置 PID {{.PID}} 的密钥?旧密钥立即失效。')">
-        <input name="csrf" type="hidden" value="{{$.CSRF}}">
-        <input name="pid" type="hidden" value="{{.PID}}">
-        <button class="btn btn-xs btn-ghost">重置密钥</button>
-      </form>
-      <form method="post" action="/admin/merchants/delete" class="inline" onsubmit="return confirm('删除商户 PID {{.PID}}?')">
-        <input name="csrf" type="hidden" value="{{$.CSRF}}">
-        <input name="pid" type="hidden" value="{{.PID}}">
-        <button class="btn btn-xs btn-ghost text-error">删除</button>
-      </form>
+  <div class="card-warm p-4 flex items-center gap-4 flex-wrap">
+    <div class="flex flex-col">
+      <span class="text-xs" style="color:var(--text-faint)">PID</span>
+      <span class="text-lg font-bold font-mono" style="color:var(--brand-solid)">{{.PID}}</span>
     </div>
+    <div class="flex-1 min-w-48">
+      <span class="text-xs" style="color:var(--text-faint)">通信密钥</span>
+      <div class="flex items-center gap-1">
+        <code class="text-sm font-mono px-2 py-1 rounded flex-1 truncate" id="key-{{.PID}}" style="background:var(--bg-subtle);color:var(--text-strong);border:1px solid var(--border-base)">{{.Key}}</code>
+        <button class="btn btn-ghost btn-xs inline-flex items-center gap-1" style="color:var(--text-muted)" data-copy="{{.Key}}"><svg class="icon" style="width:12px;height:12px"><use href="#icon-copy"></use></svg>复制</button>
+      </div>
+    </div>
+    <form method="post" action="/admin/merchants/reset-key" class="inline" onsubmit="return confirm('重置 PID {{.PID}} 的密钥？旧密钥立即失效。')">
+      <input name="csrf" type="hidden" value="{{$.CSRF}}">
+      <input name="pid" type="hidden" value="{{.PID}}">
+      <button class="btn btn-xs btn-ghost inline-flex items-center gap-1" style="color:var(--text-muted)"><svg class="icon" style="width:12px;height:12px"><use href="#icon-rotate"></use></svg>重置密钥</button>
+    </form>
+    <form method="post" action="/admin/merchants/delete" class="inline" onsubmit="return confirm('删除商户 PID {{.PID}}？')">
+      <input name="csrf" type="hidden" value="{{$.CSRF}}">
+      <input name="pid" type="hidden" value="{{.PID}}">
+      <button class="btn btn-xs btn-ghost inline-flex items-center gap-1" style="color:var(--error-text)"><svg class="icon" style="width:12px;height:12px"><use href="#icon-trash"></use></svg>删除</button>
+    </form>
   </div>
   {{end}}
 </div>
 {{else}}
-<div class="card bg-base-100 border border-base-300 rounded-2xl shadow-sm">
-  <div class="card-body text-center text-base-content/50 py-12">
-    <p>还没有商户。在上方添加第一个。</p>
-  </div>
+<div class="card-warm text-center py-12">
+  <div class="w-14 h-14 rounded-2xl inline-flex items-center justify-center mb-3" style="background:var(--bg-subtle)"><svg class="icon" style="width:28px;height:28px;color:var(--text-faint)"><use href="#icon-store"></use></svg></div>
+  <p style="color:var(--text-muted)">还没有商户。在上方添加第一个。</p>
 </div>
 {{end}}
 {{end}}
