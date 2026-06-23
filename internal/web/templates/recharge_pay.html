@@ -1,9 +1,9 @@
 {{define "content"}}
-<h1 class="text-xl font-semibold">充值支付</h1>
+<h1 class="text-xl font-bold flex items-center gap-2" style="color:var(--text-strong)"><svg class="icon" style="width:20px;height:20px;color:var(--brand-solid)"><use href="#icon-credit-card"></use></svg>充值支付</h1>
 
 <div class="max-w-md mx-auto mt-6">
-  <div class="card bg-base-100 border border-base-300 rounded-2xl shadow-sm">
-    <div class="card-body items-center text-center gap-4">
+  <div class="card-warm p-6">
+    <div class="flex flex-col items-center text-center gap-4">
       {{template "pay_status" .}}
     </div>
   </div>
@@ -13,7 +13,7 @@
 {{/* pay_status is polled by HTMX every 5s and swapped via outerHTML, so the
      poll endpoint must return ONLY this fragment (not the full page) — see
      rechargePay's HX-Request branch. Wrapped in display:contents so children
-     keep the card-body flex layout. While unpaid, it also hosts the #pay-qr
+     keep the card flex layout. While unpaid, it also hosts the #pay-qr
      target which the skeleton page fills asynchronously via /recharge/qr/{id}
      (hx-trigger="load"), so the heavy Alipay precreate happens out of the page
      render path and the QR appears as soon as it's ready. */}}
@@ -21,24 +21,25 @@
 {{$o := .Data.order}}
 <div id="pay-status" class="contents"{{if ne $o.Status "paid"}} hx-get="/recharge/pay/{{$o.ID}}" hx-trigger="every 5s" hx-target="#pay-status" hx-swap="outerHTML"{{end}}>
   {{if eq $o.Status "paid"}}
-  <div class="alert alert-success w-full justify-start">
-    <span>充值成功!到账 {{usd $o.Quota}},当前余额 {{usd .Data.balance}}</span>
+  <div class="alert alert-success w-full justify-start px-4 py-3 flex items-center gap-2 text-sm">
+    <svg class="icon shrink-0"><use href="#icon-check"></use></svg>
+    <span>充值成功！到账 {{usd $o.Quota}}，当前余额 {{usd .Data.balance}}</span>
   </div>
-  <a href="/recharge" class="btn btn-primary btn-block">返回充值</a>
-  <a href="/" class="btn btn-ghost btn-block">去首页</a>
+  <a href="/recharge" class="btn-brand inline-flex items-center justify-center gap-2 px-6 py-2.5 text-sm font-semibold w-full">返回充值</a>
+  <a href="/" class="btn-secondary inline-flex items-center justify-center gap-2 px-6 py-2.5 text-sm font-semibold w-full">去首页</a>
   {{else}}
-  <h2 class="text-lg font-semibold">请用{{.Data.method}}扫码支付</h2>
-  <div class="text-3xl font-bold text-error">¥{{fen2yuan $o.AmountFen}}</div>
+  <h2 class="text-lg font-bold" style="color:var(--text-strong)">请用{{.Data.method}}扫码支付</h2>
+  <div class="text-4xl font-bold" style="color:var(--error-text)">¥{{fen2yuan $o.AmountFen}}</div>
 
   <div id="pay-qr">
     {{/* Skeleton placeholder: swapped out by /recharge/qr/{id} on load.
          Only emitted when the async QR fragment hasn't arrived yet. */}}
-    <div class="w-64 h-64 rounded-xl border border-dashed border-base-300 grid place-items-center text-base-content/40 text-sm">
-      <span class="animate-pulse">正在生成二维码…</span>
+    <div class="w-64 h-64 rounded-xl grid place-items-center text-sm" style="border:1px dashed var(--border-base);color:var(--text-faint)">
+      <span class="animate-pulse inline-flex items-center gap-2"><svg class="icon animate-spin" style="width:14px;height:14px"><use href="#icon-loader"></use></svg>正在生成二维码…</span>
     </div>
   </div>
-  <p class="text-sm text-base-content/60">支付完成后请等待几秒,页面将自动到账</p>
-  <p class="text-xs text-base-content/40">订单号 {{$o.OutTradeNo}} · 到账 {{usd $o.Quota}}</p>
+  <p class="text-sm" style="color:var(--text-muted)">支付完成后请等待几秒，页面将自动到账</p>
+  <p class="text-xs" style="color:var(--text-faint)">订单号 {{$o.OutTradeNo}} · 到账 {{usd $o.Quota}}</p>
   {{end}}
 </div>
 
@@ -58,14 +59,15 @@
 {{$o := .Data.order}}
 <div id="pay-qr" class="contents">
   {{if .Data.payErr}}
-  <div class="alert alert-error w-full justify-start text-sm">
+  <div class="alert alert-error w-full justify-start text-sm px-4 py-3 flex items-center gap-2">
+    <svg class="icon shrink-0"><use href="#icon-alert"></use></svg>
     <span>{{.Data.payErr}}</span>
   </div>
-  <a href="/recharge/pay/{{$o.ID}}" class="btn btn-ghost btn-block">重试</a>
+  <a href="/recharge/pay/{{$o.ID}}" class="btn-secondary inline-flex items-center justify-center gap-2 px-6 py-2.5 text-sm font-semibold w-full"><svg class="icon" style="width:14px;height:14px"><use href="#icon-rotate"></use></svg>重试</a>
   {{else if .Data.qr}}
-  <img src="{{qrDataURL .Data.qr}}" class="w-64 h-64 rounded-xl border border-base-300" alt="收款码">
+  <img src="{{qrDataURL .Data.qr}}" class="w-64 h-64 rounded-xl" style="border:1px solid var(--border-base)" alt="收款码">
   {{else}}
-  <div class="w-64 h-64 rounded-xl border border-dashed border-base-300 grid place-items-center text-base-content/40 text-sm">
+  <div class="w-64 h-64 rounded-xl grid place-items-center text-sm" style="border:1px dashed var(--border-base);color:var(--text-faint)">
     <span>暂无二维码</span>
   </div>
   {{end}}
