@@ -1,91 +1,79 @@
 {{define "content"}}
-<h1 class="text-xl font-semibold">购买兑换码</h1>
-<p class="text-sm text-base-content/60 mt-1">创建后自动生成 NewAPI 兑换码,金额从余额扣除</p>
+<h1 class="text-xl font-bold flex items-center gap-2" style="color:var(--text-strong)"><svg class="icon" style="width:20px;height:20px;color:var(--brand-solid)"><use href="#icon-cart"></use></svg>购买兑换码</h1>
+<p class="text-sm mt-1" style="color:var(--text-muted)">创建后自动生成 NewAPI 兑换码，金额从余额扣除</p>
 
 <div class="grid grid-cols-1 lg:grid-cols-[480px_1fr] gap-6 mt-5">
-  <div class="card bg-base-100 border border-base-300 rounded-2xl shadow-sm">
-    <div class="card-body gap-4">
-      <form id="buy-form" method="post" action="/buy" class="contents">
-        {{if .Data.error}}<div class="alert alert-error"><span>{{.Data.error}}</span></div>{{end}}
-        <input name="csrf" type="hidden" value="{{.CSRF}}">
+  <div class="card-warm p-6">
+    <form id="buy-form" method="post" action="/buy" class="grid gap-4">
+      {{if .Data.error}}<div class="alert alert-error px-4 py-3 flex items-center gap-2 text-sm"><svg class="icon shrink-0"><use href="#icon-alert"></use></svg><span>{{.Data.error}}</span></div>{{end}}
+      <input name="csrf" type="hidden" value="{{.CSRF}}">
 
-        <div>
-          <label class="text-sm font-medium" for="f-count">数量</label>
-          <div class="flex items-center gap-2 mt-1.5">
-            <button type="button" id="f-dec" class="btn btn-square btn-sm btn-ghost border border-base-300" aria-label="减少数量">-</button>
-            <input name="count" id="f-count" type="number" min="1" step="1" inputmode="numeric" value="1" class="input input-bordered w-20 text-center">
-            <button type="button" id="f-inc" class="btn btn-square btn-sm btn-ghost border border-base-300" aria-label="增加数量">+</button>
-          </div>
-          <div class="flex gap-1.5 mt-2">
-            <button type="button" class="btn btn-xs btn-ghost border border-base-300" data-count="1">1</button>
-            <button type="button" class="btn btn-xs btn-ghost border border-base-300" data-count="5">5</button>
-            <button type="button" class="btn btn-xs btn-ghost border border-base-300" data-count="10">10</button>
-            <button type="button" class="btn btn-xs btn-ghost border border-base-300" data-count="20">20</button>
+      <div>
+        <label class="text-xs font-medium uppercase tracking-wide block mb-2" style="color:var(--text-muted)" for="f-count">数量</label>
+        <div class="flex items-center gap-2">
+          <button type="button" id="f-dec" class="w-9 h-9 rounded-lg inline-flex items-center justify-center" style="background:var(--bg-subtle);color:var(--brand-solid);border:1px solid var(--border-base)" aria-label="减少数量"><svg class="icon" style="width:14px;height:14px"><use href="#icon-minus"></use></svg></button>
+          <input name="count" id="f-count" type="number" min="1" step="1" inputmode="numeric" value="1" class="input-warm w-20 text-center py-2">
+          <button type="button" id="f-inc" class="w-9 h-9 rounded-lg inline-flex items-center justify-center" style="background:var(--bg-subtle);color:var(--brand-solid);border:1px solid var(--border-base)" aria-label="增加数量"><svg class="icon" style="width:14px;height:14px"><use href="#icon-plus"></use></svg></button>
+          <div class="flex gap-1.5 ml-1">
+            <button type="button" class="px-2.5 py-1 rounded-full text-xs" style="background:var(--bg-subtle);color:var(--text-muted);border:1px solid var(--border-base)" data-count="1">1</button>
+            <button type="button" class="px-2.5 py-1 rounded-full text-xs" style="background:var(--bg-subtle);color:var(--text-muted);border:1px solid var(--border-base)" data-count="5">5</button>
+            <button type="button" class="px-2.5 py-1 rounded-full text-xs" style="background:var(--bg-subtle);color:var(--text-muted);border:1px solid var(--border-base)" data-count="10">10</button>
+            <button type="button" class="px-2.5 py-1 rounded-full text-xs" style="background:var(--bg-subtle);color:var(--text-muted);border:1px solid var(--border-base)" data-count="20">20</button>
           </div>
         </div>
-
-        <div>
-          <label class="text-sm font-medium" for="f-quota">每码金额</label>
-          <div class="input input-bordered flex items-center mt-1.5">
-            <span class="text-base-content/60 mr-1">$</span>
-            <input name="quota" id="f-quota" type="number" min="0.01" step="0.01" inputmode="decimal" value="1" class="grow bg-transparent outline-none">
-          </div>
-          <div class="flex flex-wrap gap-1.5 mt-2">
-            <button type="button" class="btn btn-xs btn-ghost border border-base-300" data-quota="1">$1</button>
-            <button type="button" class="btn btn-xs btn-ghost border border-base-300" data-quota="5">$5</button>
-            <button type="button" class="btn btn-xs btn-ghost border border-base-300" data-quota="10">$10</button>
-            <button type="button" class="btn btn-xs btn-ghost border border-base-300" data-quota="20">$20</button>
-            <button type="button" class="btn btn-xs btn-ghost border border-base-300" data-quota="50">$50</button>
-            <button type="button" class="btn btn-xs btn-ghost border border-base-300" data-quota="100">$100</button>
-          </div>
-        </div>
-
-        <div class="rounded-xl bg-base-200 p-4 mt-2">
-          <div class="flex justify-between text-sm"><span>预计总价</span><strong id="f-total">$1.00</strong></div>
-          <div class="flex justify-between text-sm mt-2 text-base-content/60"><span>预计额度</span><span id="f-tokens">500,000 tokens</span></div>
-        </div>
-
-        <button id="f-submit" type="submit" class="btn btn-success btn-block mt-4">立即购买</button>
-        <p class="text-xs text-base-content/50 text-center -mt-1">余额充足时购买后自动生成兑换码</p>
-      </form>
-
-      {{if .Data.result}}
-      <div class="alert alert-success">
-        <span>订单 #{{.Data.result.OrderID}}:{{.Data.result.Status}},生成 {{.Data.result.Succeeded}} 个{{if gt .Data.result.Failed 0}},失败 {{.Data.result.Failed}} 已退款 {{usd .Data.result.Refunded}}{{end}}</span>
       </div>
-      {{if .Data.result.Codes}}
-      <div class="card bg-base-200 border border-base-200">
-        <div class="card-body">
-          <div class="flex flex-wrap gap-1.5">{{range .Data.result.Codes}}<span class="kbd kbd-sm cursor-pointer" data-copy="{{.}}">{{.}}</span>{{end}}</div>
-          <button class="btn btn-ghost btn-sm mt-2" data-copy-all="{{joinCodes .Data.result.Codes}}">复制全部</button>
+
+      <div>
+        <label class="text-xs font-medium uppercase tracking-wide block mb-2" style="color:var(--text-muted)" for="f-quota">每码金额</label>
+        <div class="input-warm flex items-center px-3 py-2">
+          <span class="mr-1" style="color:var(--text-faint)">$</span>
+          <input name="quota" id="f-quota" type="number" min="0.01" step="0.01" inputmode="decimal" value="1" class="grow bg-transparent outline-none text-sm" style="color:var(--text-strong)">
         </div>
-      </div>{{end}}
-      {{end}}
-    </div>
+        <div class="flex flex-wrap gap-1.5 mt-2">
+          <button type="button" class="px-2.5 py-1 rounded-full text-xs" style="background:var(--bg-subtle);color:var(--text-muted);border:1px solid var(--border-base)" data-quota="1">$1</button>
+          <button type="button" class="px-2.5 py-1 rounded-full text-xs" style="background:var(--bg-subtle);color:var(--text-muted);border:1px solid var(--border-base)" data-quota="5">$5</button>
+          <button type="button" class="px-2.5 py-1 rounded-full text-xs" style="background:var(--bg-subtle);color:var(--text-muted);border:1px solid var(--border-base)" data-quota="10">$10</button>
+          <button type="button" class="px-2.5 py-1 rounded-full text-xs" style="background:var(--bg-subtle);color:var(--text-muted);border:1px solid var(--border-base)" data-quota="20">$20</button>
+          <button type="button" class="px-2.5 py-1 rounded-full text-xs" style="background:var(--bg-subtle);color:var(--text-muted);border:1px solid var(--border-base)" data-quota="50">$50</button>
+          <button type="button" class="px-2.5 py-1 rounded-full text-xs" style="background:var(--bg-subtle);color:var(--text-muted);border:1px solid var(--border-base)" data-quota="100">$100</button>
+        </div>
+      </div>
+
+      <div class="rounded-xl p-4" style="background:var(--bg-subtle)">
+        <div class="flex justify-between text-sm"><span style="color:var(--text-muted)">预计总价</span><strong id="f-total" style="color:var(--brand-solid)">$1.00</strong></div>
+        <div class="flex justify-between text-sm mt-2" style="color:var(--text-muted)"><span>预计额度</span><span id="f-tokens">500,000 tokens</span></div>
+      </div>
+
+      <button id="f-submit" type="submit" class="btn-brand py-2.5 text-sm font-semibold mt-2">立即购买</button>
+      <p class="text-xs text-center" style="color:var(--text-faint)">余额充足时购买后自动生成兑换码</p>
+    </form>
+
+    {{if .Data.result}}
+    <div class="alert alert-success mt-4 px-4 py-3 flex items-center gap-2 text-sm"><svg class="icon shrink-0"><use href="#icon-check"></use></svg><span>订单 #{{.Data.result.OrderID}}:{{.Data.result.Status}}，生成 {{.Data.result.Succeeded}} 个{{if gt .Data.result.Failed 0}}，失败 {{.Data.result.Failed}} 已退款 {{usd .Data.result.Refunded}}{{end}}</span></div>
+    {{if .Data.result.Codes}}
+    <div class="rounded-xl p-4 mt-3" style="background:var(--bg-subtle);border:1px solid var(--border-base)">
+      <div class="flex flex-wrap gap-1.5">{{range .Data.result.Codes}}<span class="kbd kbd-sm cursor-pointer px-2 py-1 rounded-md text-xs font-mono" style="background:var(--bg-surface);color:var(--brand-solid);border:1px solid var(--border-base)" data-copy="{{.}}">{{.}}</span>{{end}}</div>
+      <button class="btn btn-ghost btn-sm mt-2 inline-flex items-center gap-1" style="color:var(--text-muted)" data-copy-all="{{joinCodes .Data.result.Codes}}"><svg class="icon" style="width:12px;height:12px"><use href="#icon-copy"></use></svg>复制全部</button>
+    </div>{{end}}
+    {{end}}
   </div>
 
-  <div class="space-y-6">
+  <div class="space-y-4">
     {{if .User}}
-    <div class="card bg-base-100 border border-base-300 rounded-2xl shadow-sm">
-      <div class="card-body">
-        <h3 class="text-sm font-medium text-base-content/60">账户信息</h3>
-        <div class="stat px-0">
-          <div class="stat-title">当前余额</div>
-          <div class="stat-value text-2xl text-primary">{{.User.BalanceFmt}}</div>
-        </div>
-      </div>
+    <div class="card-warm p-5">
+      <h3 class="text-xs font-medium uppercase tracking-wide mb-3" style="color:var(--text-muted)">账户信息</h3>
+      <div class="text-xs mb-1" style="color:var(--text-muted)">当前余额</div>
+      <div class="text-3xl font-bold" style="color:var(--brand-solid)">{{.User.BalanceFmt}}</div>
     </div>
     {{end}}
 
-    <div class="card bg-base-100 border border-base-300 rounded-2xl shadow-sm">
-      <div class="card-body">
-        <h3 class="text-sm font-medium text-base-content/60">购买说明</h3>
-        <ul class="text-sm text-base-content/80 list-disc pl-4 mt-2 space-y-1.5">
-          <li>兑换码创建后可在「<a class="link" href="/orders">订单</a>」页查看与复制</li>
-          <li>金额按 <strong>数量 × 每码金额</strong> 从余额扣除</li>
-          <li>1$ = 500,000 额度</li>
-        </ul>
-      </div>
+    <div class="card-warm p-5">
+      <h3 class="text-xs font-medium uppercase tracking-wide mb-3" style="color:var(--text-muted)">购买说明</h3>
+      <ul class="text-sm space-y-2" style="color:var(--text-base)">
+        <li class="flex gap-2"><svg class="icon shrink-0 mt-0.5" style="width:14px;height:14px;color:var(--brand-solid)"><use href="#icon-check"></use></svg><span>兑换码创建后可在「<a class="hover:underline" style="color:var(--brand-solid)" href="/orders">订单</a>」页查看与复制</span></li>
+        <li class="flex gap-2"><svg class="icon shrink-0 mt-0.5" style="width:14px;height:14px;color:var(--brand-solid)"><use href="#icon-check"></use></svg><span>金额按 <strong>数量 × 每码金额</strong> 从余额扣除</span></li>
+        <li class="flex gap-2"><svg class="icon shrink-0 mt-0.5" style="width:14px;height:14px;color:var(--brand-solid)"><use href="#icon-check"></use></svg><span>1$ = 500,000 额度</span></li>
+      </ul>
     </div>
   </div>
 </div>
@@ -122,7 +110,7 @@
 
   form.addEventListener('submit', function(){
     submit.disabled = true;
-    submit.textContent = '正在创建…';
+    submit.innerHTML = '<svg class="icon animate-spin" style="width:14px;height:14px;display:inline"><use href="#icon-loader"></use></svg> 正在创建…';
   });
 
   recalc();
