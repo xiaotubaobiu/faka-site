@@ -1,9 +1,12 @@
 {{define "content"}}
-<h2 class="text-xl font-semibold mb-3">订单</h2>
-<input name="q" class="input input-bordered input-sm mb-3 w-full max-w-xs"
-       placeholder="搜索订单号 / 状态…"
-       value="{{.Data.q}}"
-       hx-get="/orders" hx-target="#order-list"
-       hx-trigger="input changed delay:300ms" hx-include="this">
+<h2 class="text-xl font-bold mb-4 flex items-center gap-2" style="color:var(--text-strong)"><svg class="icon" style="width:20px;height:20px;color:var(--brand-solid)"><use href="#icon-package"></use></svg>订单</h2>
+<div class="relative mb-4 max-w-xs">
+  <span class="absolute left-3 top-1/2 -translate-y-1/2" style="color:var(--text-faint)"><svg class="icon" style="width:14px;height:14px"><use href="#icon-search-x"></use></svg></span>
+  <input name="q" class="input-warm w-full pl-9 pr-3 py-2 text-sm"
+         placeholder="搜索订单号 / 状态…"
+         value="{{.Data.q}}"
+         hx-get="/orders" hx-target="#order-list"
+         hx-trigger="input changed delay:300ms" hx-include="this">
+</div>
 <div id="order-list">{{template "orders_list" .}}</div>
 {{end}}
